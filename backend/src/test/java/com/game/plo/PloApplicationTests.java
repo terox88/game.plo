@@ -1,0 +1,13 @@
+package com.game.plo;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class PloApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

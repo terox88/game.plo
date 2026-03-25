@@ -1,0 +1,13 @@
+# backend
+/backend/build/
+/backend/.gradle/
+
+# frontend
+/frontend/node_modules/
+
+# IDE
+/.idea/
+*.iml
+
+# OS
+.DS_Store
