@@ -1,4 +1,4 @@
-package com.game.plo.config;
+package com.game.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
