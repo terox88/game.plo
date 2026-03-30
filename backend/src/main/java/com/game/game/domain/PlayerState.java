@@ -2,6 +2,7 @@ package com.game.game.domain;
 
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,17 +17,19 @@ public class PlayerState {
     private String name;
     private Hero hero;
 
-    // abilities per level
-    private LevelAbilities level1;
-    private LevelAbilities level2;
-    private LevelAbilities level3;
+    @Builder.Default
+    private LevelAbilities level1 = new LevelAbilities(1, 2, new ArrayList<>());
 
-    // units
+    @Builder.Default
+    private LevelAbilities level2 = new LevelAbilities(2, 3, new ArrayList<>());
+
+    @Builder.Default
+    private LevelAbilities level3 = new LevelAbilities(3, 4, new ArrayList<>());
+
     private int unitLevel1;
     private int unitLevel2;
     private int unitLevel3;
 
-    // resources
     private int gold;
     private int population;
 
@@ -35,12 +38,20 @@ public class PlayerState {
     private int mana2;
     private int mana3;
 
-    // game stats
     private int reputation;
     private int victoryPoints;
     private int vukoTokens;
+
     private int availableActionMarkers;
     private int availableInfluenceMarkers;
+
+    public static PlayerState create(String name, Hero hero) {
+        return PlayerState.builder()
+                .playerId(UUID.randomUUID())
+                .name(name)
+                .hero(hero)
+                .build();
+    }
 
     public boolean hasAbility(int level, AbilitiesType ability) {
         return switch (level) {
