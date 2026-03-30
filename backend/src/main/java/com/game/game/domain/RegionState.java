@@ -15,7 +15,7 @@ public class RegionState {
     private int number;
 
     private List<Integer> neighbors;
-
+@Setter
     private RegionToken landToken;
 
     @Builder.Default

@@ -9,6 +9,7 @@ public class GameSetupFactory {
     private final LandTokenFactory landTokenFactory = new LandTokenFactory();
     private final RegionFactory regionFactory = new RegionFactory();
     private final ActionFieldFactory actionFieldFactory = new ActionFieldFactory();
+    private final Random random = new Random();
 
     public GameState createGame(List<PlayerState> players) {
 
@@ -19,6 +20,7 @@ public class GameSetupFactory {
         int playersCount = players.size();
 
         List<RegionToken> tokens = landTokenFactory.create(playersCount);
+        Collections.shuffle(tokens, random);
 
         List<RegionState> regions = regionFactory.create();
 

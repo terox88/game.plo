@@ -16,6 +16,7 @@ public class RegionFactory {
                             .id(UUID.randomUUID())
                             .number(i)
                             .neighbors(neighbors(i))
+                            .neutralMarkerCount(1)
                             .build()
             );
         }
