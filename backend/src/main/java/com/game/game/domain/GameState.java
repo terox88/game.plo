@@ -33,4 +33,8 @@ public class GameState {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Region not found: " + number));
     }
+
+    public boolean isVanDykenInGame() {
+        return players.stream().allMatch(p -> p.getHero() == Hero.PIER);
+    }
 }

@@ -8,10 +8,9 @@ public class GameEngine {
     public void assignToken(GameState game, AssignTokenToRegionAction action) {
 
 
-        if (game.getCurrentPhase() != Phase.INITIATIVE) {
-            throw new IllegalStateException("Not in setup phase");
+        if (game.getCurrentPhase() != Phase.SETUP_TOKENS) {
+            throw new IllegalStateException("Not in token setup phase");
         }
-
 
         if (!game.getCurrentPlayerId().equals(action.getPlayerId())) {
             throw new IllegalStateException("Not this player's turn");
@@ -23,11 +22,9 @@ public class GameEngine {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Region not found"));
 
-
-        if (region.getFeatures().contains(RegionFeature.IN_GAME)) {
+        if (region.isActive()) {
             throw new IllegalStateException("Region already active");
         }
-
 
         RegionToken token = game.getAvailableTokens().stream()
                 .filter(t -> t.getId().equals(action.getTokenId()))
@@ -39,8 +36,22 @@ public class GameEngine {
         region.getFeatures().add(RegionFeature.IN_GAME);
         game.getAvailableTokens().remove(token);
 
+        if (game.getAvailableTokens().isEmpty()) {
+            moveToNextPhaseAfterTokens(game);
+            return;
+        }
+
 
         nextPlayer(game);
+    }
+
+    private void moveToNextPhaseAfterTokens(GameState game) {
+
+        if (game.isVanDykenInGame()) {
+            game.setCurrentPhase(Phase.SETUP_THORN);
+        } else {
+            game.setCurrentPhase(Phase.SETUP_INFLUENCE_1);
+        }
     }
 
     private void nextPlayer(GameState game) {
