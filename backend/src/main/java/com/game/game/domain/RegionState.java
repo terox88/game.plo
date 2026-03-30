@@ -33,4 +33,20 @@ public class RegionState {
     private Set<RegionFeature> features = new HashSet<>();
 
     private int nightmareCount;
+
+    public boolean hasThorn () {
+        return features.contains(RegionFeature.THORN);
+    }
+    public boolean isActive() {
+        return features.contains(RegionFeature.IN_GAME);
+    }
+    public boolean hasTower() {
+        return features.contains(RegionFeature.TOWER);
+    }
+    public boolean hasVuko() {
+        return features.contains(RegionFeature.VUKO);
+    }
+    public boolean isClosed() {
+        return features.contains(RegionFeature.CLOSED);
+    }
 }
