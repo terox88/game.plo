@@ -35,6 +35,6 @@ public class GameState {
     }
 
     public boolean isVanDykenInGame() {
-        return players.stream().allMatch(p -> p.getHero() == Hero.PIER);
+        return players.stream().anyMatch(p -> p.getHero() == Hero.PIER);
     }
 }
