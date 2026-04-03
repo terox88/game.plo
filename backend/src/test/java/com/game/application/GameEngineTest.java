@@ -1,14 +1,17 @@
 package com.game.game.application;
 
 import com.game.game.application.action.AssignTokenToRegionAction;
+import com.game.game.application.action.PlaceInfluenceAction;
 import com.game.game.application.action.PlaceThornAction;
 import com.game.game.domain.*;
 import com.game.game.factory.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class GameEngineTest {
 
@@ -35,6 +38,7 @@ class GameEngineTest {
                 region.getId(),
                 token.getId()
         );
+        game.setCurrentPhase(Phase.SETUP_TOKENS);
 
         // when
         engine.assignToken(game, action);
@@ -119,5 +123,125 @@ class GameEngineTest {
                 assertThat(region.getUroczyska()).isEmpty();
             }
         });
+    }
+
+    @Test
+    void shouldPlaceInfluenceInTwoRoundsAndSwitchPhase() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER),
+                playerFactory.create("B", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        var regions = game.getRegions();
+
+        // 🔥 aktywacja regionów
+        for (int i = 0; i < 4; i++) {
+            var region = regions.get(i);
+            var token = game.getAvailableTokens().get(0);
+
+            game.setCurrentPhase(Phase.SETUP_TOKENS);
+            engine.assignToken(game, new AssignTokenToRegionAction(
+                    game.getCurrentPlayerId(),
+                    region.getId(),
+                    token.getId()
+            ));
+        }
+
+        // 🔁 runda 1
+        game.setCurrentPhase(Phase.SETUP_INFLUENCE_1);
+
+        engine.placeInfluence(game,
+                new PlaceInfluenceAction(game.getCurrentPlayerId(), regions.get(0).getId()));
+
+        engine.placeInfluence(game,
+                new PlaceInfluenceAction(game.getCurrentPlayerId(), regions.get(1).getId()));
+
+        assertThat(game.getCurrentPhase()).isEqualTo(Phase.SETUP_INFLUENCE_2);
+
+        // 🔁 runda 2
+        engine.placeInfluence(game,
+                new PlaceInfluenceAction(game.getCurrentPlayerId(), regions.get(2).getId()));
+
+        engine.placeInfluence(game,
+                new PlaceInfluenceAction(game.getCurrentPlayerId(), regions.get(3).getId()));
+
+        assertThat(game.getCurrentPhase()).isEqualTo(Phase.INITIATIVE);
+
+        long totalMarkers = game.getRegions().stream()
+                .flatMap(r -> r.getInfluenceMarkers().stream())
+                .count();
+
+        assertThat(totalMarkers).isEqualTo(4);
+    }
+
+    @Test
+    void shouldNotAllowPlacingInfluenceTwiceInSameRegion() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER),
+                playerFactory.create("B", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        var region = game.getRegions().get(0);
+        var token = game.getAvailableTokens().get(0);
+
+        game.setCurrentPhase(Phase.SETUP_TOKENS);
+        engine.assignToken(game, new AssignTokenToRegionAction(
+                game.getCurrentPlayerId(),
+                region.getId(),
+                token.getId()
+        ));
+
+        game.setCurrentPhase(Phase.SETUP_INFLUENCE_1);
+
+        UUID playerId = game.getCurrentPlayerId();
+
+        // pierwszy marker
+        engine.placeInfluence(game,
+                new PlaceInfluenceAction(playerId, region.getId()));
+
+        // drugi marker ❌
+        assertThrows(IllegalStateException.class, () -> {
+            game.setCurrentPhase(Phase.SETUP_INFLUENCE_1); // ważne!
+            engine.placeInfluence(game,
+                    new PlaceInfluenceAction(playerId, region.getId()));
+        });
+    }
+
+    @Test
+    void shouldDecreaseInfluenceMarkersAfterPlacement() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER),
+                playerFactory.create("B", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        var region = game.getRegions().get(0);
+        var token = game.getAvailableTokens().get(0);
+
+        game.setCurrentPhase(Phase.SETUP_TOKENS);
+        engine.assignToken(game, new AssignTokenToRegionAction(
+                game.getCurrentPlayerId(),
+                region.getId(),
+                token.getId()
+        ));
+
+        game.setCurrentPhase(Phase.SETUP_INFLUENCE_1);
+
+        PlayerState player = game.findPlayer(game.getCurrentPlayerId());
+        int before = player.getAvailableInfluenceMarkers();
+
+        engine.placeInfluence(game,
+                new PlaceInfluenceAction(player.getPlayerId(), region.getId()));
+
+        assertThat(player.getAvailableInfluenceMarkers())
+                .isEqualTo(before - 1);
     }
 }

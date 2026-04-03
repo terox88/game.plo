@@ -26,7 +26,8 @@ public class GameState {
     private int deadSnow;
     private int roundNumber;
     private int stageNumber;
-    private Map<UUID,Set<UUID>> setupInfluenceHistory;
+    @Builder.Default
+    private Map<UUID,Set<UUID>> setupInfluenceHistory = new HashMap<>();
 
     public RegionState getRegionByNumber(int number) {
         return regions.stream()
