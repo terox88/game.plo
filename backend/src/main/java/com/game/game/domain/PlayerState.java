@@ -61,4 +61,111 @@ public class PlayerState {
             default -> false;
         };
     }
+
+    public void useInfluenceMarker() {
+
+        if (availableInfluenceMarkers <= 0) {
+            throw new IllegalStateException("No available influence markers");
+        }
+
+        availableInfluenceMarkers--;
+    }
+
+    public void retrieveInfluenceMarker() {
+        if (availableInfluenceMarkers >= 20) {
+            throw new IllegalStateException("All influence markers already available");
+        }
+
+        availableInfluenceMarkers++;
+    }
+
+    public void addGold(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        gold += amount;
+    }
+
+    public void spendGold(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        if (gold < amount) {
+            throw new IllegalStateException("Not enough gold");
+        }
+
+        gold -= amount;
+    }
+
+    public void addPopulation(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        population += amount;
+    }
+
+    public void spendPopulation(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        if (population < amount) {
+            throw new IllegalStateException("Not enough population");
+        }
+
+        population -= amount;
+    }
+
+    public void spendMana(int level) {
+
+        switch (level) {
+            case 0 -> {
+                if (mana0 <= 0) throw new IllegalStateException("No mana level 0");
+                mana0--;
+            }
+            case 1 -> {
+                if (mana1 <= 0) throw new IllegalStateException("No mana level 1");
+                mana1--;
+            }
+            case 2 -> {
+                if (mana2 <= 0) throw new IllegalStateException("No mana level 2");
+                mana2--;
+            }
+            case 3 -> {
+                if (mana3 <= 0) throw new IllegalStateException("No mana level 3");
+                mana3--;
+            }
+            default -> throw new IllegalArgumentException("Invalid mana level: " + level);
+        }
+    }
+
+    public void addMana(int level, int amount) {
+
+        if (amount < 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        switch (level) {
+            case 0 -> mana0 += amount;
+            case 1 -> mana1 += amount;
+            case 2 -> mana2 += amount;
+            case 3 -> mana3 += amount;
+            default -> throw new IllegalArgumentException("Invalid mana level: " + level);
+        }
+    }
+
+    public int getMana(int level) {
+        return switch (level) {
+            case 0 -> mana0;
+            case 1 -> mana1;
+            case 2 -> mana2;
+            case 3 -> mana3;
+            default -> throw new IllegalArgumentException("Invalid mana level");
+        };
+    }
+
+
 }

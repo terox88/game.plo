@@ -26,6 +26,7 @@ public class GameState {
     private int deadSnow;
     private int roundNumber;
     private int stageNumber;
+    private Map<UUID,Set<UUID>> setupInfluenceHistory;
 
     public RegionState getRegionByNumber(int number) {
         return regions.stream()
@@ -37,4 +38,17 @@ public class GameState {
     public boolean isVanDykenInGame() {
         return players.stream().anyMatch(p -> p.getHero() == Hero.PIER);
     }
+    public PlayerState findPlayer(UUID playerId) {
+
+        if (playerId == null) {
+            throw new IllegalArgumentException("PlayerId cannot be null");
+        }
+
+        return players.stream()
+                .filter(p -> p.getPlayerId().equals(playerId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
+    }
+
+
 }
