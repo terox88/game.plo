@@ -24,6 +24,7 @@ public class GameState {
 
     private Phase currentPhase;
     private List<UUID> currentTurnOrder;
+    private List<ActionFieldType> actionResolutionOrder;
 
     private int deadSnow;
     private int stageLast;

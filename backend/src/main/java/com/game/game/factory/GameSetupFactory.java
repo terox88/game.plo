@@ -40,6 +40,7 @@ public class GameSetupFactory {
                 .reputationTrack(reputationTrack)
                 .currentPlayerId(players.get(0).getPlayerId())
                 .currentPhase(Phase.SETUP_TOKENS)
+                .actionResolutionOrder(defaultActionOrder())
                 .deadSnow(0)
                 .stageLast(1)
                 .roundLast(1)
@@ -87,5 +88,14 @@ public class GameSetupFactory {
         return ReputationTrack.builder()
                 .slots(slots)
                 .build();
+    }
+    private List<ActionFieldType> defaultActionOrder() {
+        return List.of(
+                ActionFieldType.INFLUENCES,
+                ActionFieldType.MOVE,
+                ActionFieldType.MOUNTAIN,
+                ActionFieldType.SHADOW_RAVE,
+                ActionFieldType.MAKING
+        );
     }
 }
