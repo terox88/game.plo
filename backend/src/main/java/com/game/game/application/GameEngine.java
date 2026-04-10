@@ -195,6 +195,39 @@ public class GameEngine {
 
         nextPlayer(game);
     }
+    // =========================================================
+    // REPUTATION
+    // =========================================================
+    public void changeReputation(GameState game, UUID playerId, int delta) {
+
+        PlayerState player = game.findPlayer(playerId);
+
+        int oldLevel = player.getReputation();
+        int newLevel = oldLevel + delta;
+
+        // 🔒 walidacje domenowe
+
+       validateReputationChange(oldLevel, newLevel);
+
+       if (oldLevel == newLevel) {
+            return;
+        }
+
+        ReputationTrack track = game.getReputationTrack();
+
+        // usuń z poprzedniego slotu
+        track.getSlot(oldLevel).remove(playerId);
+
+        if (delta > 0) {
+            // 🔻 pogorszenie → NA WIERZCH
+            track.getSlot(newLevel).addOnTop(playerId);
+        } else {
+            // 🔺 poprawa → NA SPÓD
+            track.getSlot(newLevel).addAtBottom(playerId);
+        }
+
+        player.setReputation(newLevel);
+    }
 
     // =========================================================
     // HELPERS
@@ -232,5 +265,22 @@ public class GameEngine {
         int nextIndex = (index + 1) % order.size();
 
         game.setCurrentPlayerId(order.get(nextIndex));
+    }
+
+    private void validateReputationChange(int oldLevel, int newLevel) {
+
+        if (newLevel > 10) {
+            throw new IllegalStateException("Cannot go beyond reputation level 9");
+        }
+
+        // ❗ blokada powrotu na 0
+        if (newLevel == 0 && oldLevel != 0) {
+            throw new IllegalStateException("Cannot return to Yin-Yang");
+        }
+
+        // ❗ dodatkowo: nie schodzimy poniżej 0
+        if (newLevel < 0) {
+            throw new IllegalStateException("Invalid reputation level");
+        }
     }
 }

@@ -19,6 +19,7 @@ public class GameState {
     private ViperGorge viperGorge;
 
     private InitiativeTrack initiativeTrack;
+    private ReputationTrack reputationTrack;
     private UUID currentPlayerId;
 
     private Phase currentPhase;
