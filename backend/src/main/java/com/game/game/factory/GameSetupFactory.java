@@ -38,6 +38,7 @@ public class GameSetupFactory {
                 .viperGorge(viperGorge)
                 .initiativeTrack(track)
                 .reputationTrack(reputationTrack)
+                .currentTurnOrder(initOrder(players))
                 .currentPlayerId(players.get(0).getPlayerId())
                 .currentPhase(Phase.SETUP_TOKENS)
                 .actionResolutionOrder(defaultActionOrder())

@@ -269,6 +269,7 @@ public class GameEngine {
     public void placeActionMarker(GameState game, PlaceActionMarkerOnFieldAction action) {
 
         validatePhase(game, Phase.PLANNING_ACTIONS);
+        skipPlayersWithoutMarkers(game);
         validateTurn(game, action);
 
         PlayerState player = game.findPlayer(action.getPlayerId());
@@ -283,6 +284,10 @@ public class GameEngine {
         player.useActionMarker();
 
         nextPlayerSkippingFinished(game);
+        if (allPlayersFinishedPlanning(game)) {
+            game.setCurrentPhase(Phase.ACTION);
+            return;
+        }
     }
 
     public void placeOnViperGorge(GameState game, PlaceActionMarkerOnViperGorgeAction action) {
@@ -307,6 +312,10 @@ public class GameEngine {
         player.useInfluenceMarker();
 
         nextPlayerSkippingFinished(game);
+        if (allPlayersFinishedPlanning(game)) {
+            game.setCurrentPhase(Phase.ACTION);
+            return;
+        }
     }
 
     // =========================================================
@@ -336,6 +345,9 @@ public class GameEngine {
     private void nextPlayer(GameState game) {
 
         List<UUID> order = game.getCurrentTurnOrder();
+        if (order == null || order.isEmpty()) {
+            throw new IllegalStateException("Turn order not initialized");
+        }
 
         int index = order.indexOf(game.getCurrentPlayerId());
 
@@ -408,6 +420,17 @@ public class GameEngine {
                 return;
             }
         }
+    }
+
+    private void skipPlayersWithoutMarkers(GameState game) {
+
+        PlayerState current = game.findPlayer(game.getCurrentPlayerId());
+
+        if (current.getAvailableActionMarkers() > 0) {
+            return;
+        }
+
+        nextPlayerSkippingFinished(game);
     }
 
     private boolean allPlayersFinishedPlanning(GameState game) {
