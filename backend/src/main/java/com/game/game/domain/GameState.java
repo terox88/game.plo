@@ -18,14 +18,14 @@ public class GameState {
     private List<RegionToken> availableTokens;
     private ViperGorge viperGorge;
 
-    private List<UUID> initiativeOrder;
+    private InitiativeTrack initiativeTrack;
     private UUID currentPlayerId;
 
     private Phase currentPhase;
 
     private int deadSnow;
-    private int roundNumber;
-    private int stageNumber;
+    private int stageLast;
+    private int roundLast;
     @Builder.Default
     private Map<UUID,Set<UUID>> setupInfluenceHistory = new HashMap<>();
 
@@ -37,7 +37,7 @@ public class GameState {
     }
 
     public boolean isVanDykenInGame() {
-        return players.stream().anyMatch(p -> p.getHero() == Hero.PIER);
+        return players.stream().anyMatch(PlayerState::isVanDyken);
     }
     public PlayerState findPlayer(UUID playerId) {
 
@@ -49,6 +49,24 @@ public class GameState {
                 .filter(p -> p.getPlayerId().equals(playerId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
+    }
+
+    public void updateGlobalProgress(PlayerState player) {
+
+        if (player.getStage() > stageLast ||
+                (player.getStage() == stageLast && player.getRound() > roundLast)) {
+
+            stageLast = player.getStage();
+            roundLast = player.getRound();
+        }
+    }
+
+    public List<UUID> getTurnOrder() {
+        return initiativeTrack.getTurnOrder();
+    }
+
+    public List<PlayerState> getPlayers() {
+        return Collections.unmodifiableList(players);
     }
 
 

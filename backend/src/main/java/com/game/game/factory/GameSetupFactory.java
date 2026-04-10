@@ -18,6 +18,7 @@ public class GameSetupFactory {
         }
 
         int playersCount = players.size();
+        InitiativeTrack track = createInitiativeTrack(players);
 
         List<RegionToken> tokens = landTokenFactory.create(playersCount);
         Collections.shuffle(tokens, random);
@@ -34,12 +35,12 @@ public class GameSetupFactory {
                 .actionFields(actionFields)
                 .availableTokens(tokens)
                 .viperGorge(viperGorge)
-                .initiativeOrder(initOrder(players))
+                .initiativeTrack(track)
                 .currentPlayerId(players.get(0).getPlayerId())
-                .currentPhase(Phase.INITIATIVE)
+                .currentPhase(Phase.SETUP_TOKENS)
                 .deadSnow(0)
-                .roundNumber(1)
-                .stageNumber(1)
+                .stageLast(1)
+                .roundLast(1)
                 .build();
     }
 
@@ -47,5 +48,23 @@ public class GameSetupFactory {
         return players.stream()
                 .map(PlayerState::getPlayerId)
                 .toList();
+    }
+
+    private InitiativeTrack createInitiativeTrack(List<PlayerState> players) {
+
+        List<InitiativeSlot> slots = new ArrayList<>();
+
+
+        for (int i = 0; i < 10; i++) {
+            slots.add(new InitiativeSlot(i, new ArrayList<>()));
+        }
+
+        InitiativeSlot startSlot = slots.get(0);
+
+        players.forEach(p -> startSlot.addPlayer(p.getPlayerId()));
+
+        return InitiativeTrack.builder()
+                .slots(slots)
+                .build();
     }
 }

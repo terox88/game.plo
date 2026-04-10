@@ -9,22 +9,16 @@ public class GameEngine {
 
     private final Random random = new Random();
 
+    // =========================================================
+    // SETUP TOKENS
+    // =========================================================
+
     public void assignToken(GameState game, AssignTokenToRegionAction action) {
 
+        validatePhase(game, Phase.SETUP_TOKENS);
+        validateTurn(game, action.getPlayerId());
 
-        if (game.getCurrentPhase() != Phase.SETUP_TOKENS) {
-            throw new IllegalStateException("Not in token setup phase");
-        }
-
-        if (!game.getCurrentPlayerId().equals(action.getPlayerId())) {
-            throw new IllegalStateException("Not this player's turn");
-        }
-
-
-        RegionState region = game.getRegions().stream()
-                .filter(r -> r.getId().equals(action.getRegionId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Region not found"));
+        RegionState region = findRegion(game, action.getRegionId());
 
         if (region.isActive()) {
             throw new IllegalStateException("Region already active");
@@ -35,7 +29,6 @@ public class GameEngine {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Token not available"));
 
-
         region.setLandToken(token);
         region.getFeatures().add(RegionFeature.IN_GAME);
         game.getAvailableTokens().remove(token);
@@ -45,37 +38,31 @@ public class GameEngine {
             return;
         }
 
-
         nextPlayer(game);
     }
 
     private void moveToNextPhaseAfterTokens(GameState game) {
-
         if (game.isVanDykenInGame()) {
             game.setCurrentPhase(Phase.SETUP_THORN);
         } else {
-            game.setCurrentPhase(Phase.SETUP_INFLUENCE_1);
+            game.setCurrentPhase(Phase.SETUP_UROCZYSKA);
         }
     }
 
+    // =========================================================
+    // THORN
+    // =========================================================
+
     public void placeThorn(GameState game, PlaceThornAction action) {
 
-        if (game.getCurrentPhase() != Phase.SETUP_THORN) {
-            throw new IllegalStateException("Not in thorn setup phase");
-        }
+        validatePhase(game, Phase.SETUP_THORN);
+        validateTurn(game, action.getPlayerId());
 
         if (!game.isVanDykenInGame()) {
             throw new IllegalStateException("VanDyken not in game");
         }
 
-        if (!game.getCurrentPlayerId().equals(action.getPlayerId())) {
-            throw new IllegalStateException("Not this player's turn");
-        }
-
-        RegionState region = game.getRegions().stream()
-                .filter(r -> r.getId().equals(action.getRegionId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Region not found"));
+        RegionState region = findRegion(game, action.getRegionId());
 
         if (!region.isActive()) {
             throw new IllegalStateException("Region not active");
@@ -90,11 +77,13 @@ public class GameEngine {
         game.setCurrentPhase(Phase.SETUP_UROCZYSKA);
     }
 
+    // =========================================================
+    // UROCZYSKA
+    // =========================================================
+
     public void distributeUroczyska(GameState game) {
 
-        if (game.getCurrentPhase() != Phase.SETUP_UROCZYSKA) {
-            throw new IllegalStateException("Not in uroczyska setup phase");
-        }
+        validatePhase(game, Phase.SETUP_UROCZYSKA);
 
         var validRegions = game.getRegions().stream()
                 .filter(RegionState::isActive)
@@ -102,16 +91,14 @@ public class GameEngine {
                 .toList();
 
         if (validRegions.size() < 4) {
-            throw new IllegalStateException("Not enough valid regions for uroczyska");
+            throw new IllegalStateException("Not enough valid regions");
         }
 
         var shuffled = new ArrayList<>(validRegions);
         Collections.shuffle(shuffled, random);
 
         for (int i = 0; i < 4; i++) {
-            RegionState region = shuffled.get(i);
-
-            region.getUroczyska().add(
+            shuffled.get(i).getUroczyska().add(
                     Uroczysko.builder()
                             .id(i)
                             .flipped(false)
@@ -122,87 +109,128 @@ public class GameEngine {
         game.setCurrentPhase(Phase.SETUP_INFLUENCE_1);
     }
 
+    // =========================================================
+    // INFLUENCE (SETUP)
+    // =========================================================
+
     public void placeInfluence(GameState game, PlaceInfluenceAction action) {
 
-        // 🔒 1. faza
-        if (game.getCurrentPhase() != Phase.SETUP_INFLUENCE_1 &&
-                game.getCurrentPhase() != Phase.SETUP_INFLUENCE_2) {
-            throw new IllegalStateException("Not in influence setup phase");
-        }
+        validatePhase(game, Phase.SETUP_INFLUENCE_1, Phase.SETUP_INFLUENCE_2);
+        validateTurn(game, action.getPlayerId());
 
-        // 👤 2. tura
-        if (!game.getCurrentPlayerId().equals(action.getPlayerId())) {
-            throw new IllegalStateException("Not this player's turn");
-        }
-
-        // 🌍 3. region
-        RegionState region = game.getRegions().stream()
-                .filter(r -> r.getId().equals(action.getRegionId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Region not found"));
+        RegionState region = findRegion(game, action.getRegionId());
 
         if (!region.isActive()) {
             throw new IllegalStateException("Region not active");
         }
 
-        // ❗ 4. historia gracza
-        var history = game.getSetupInfluenceHistory()
-                .computeIfAbsent(action.getPlayerId(), k -> new HashSet<>());
-
-        if (history.contains(region.getId())) {
-            throw new IllegalStateException("Cannot place influence twice in same region");
-        }
-
-        // 👤 pobierz gracza
         PlayerState player = game.findPlayer(action.getPlayerId());
 
-        // ❗ czy ma dostępne markery
-        if (player.getAvailableInfluenceMarkers() <= 0) {
-            throw new IllegalStateException("No available influence markers");
+        var history = game.getSetupInfluenceHistory()
+                .computeIfAbsent(player.getPlayerId(), k -> new HashSet<>());
+
+        if (history.contains(region.getId())) {
+            throw new IllegalStateException("Cannot place twice in same region");
         }
 
-        // 🔥 5. wykonanie
-        region.getInfluenceMarkers().add(
-                new InfluenceMarker(action.getPlayerId())
-        );
         player.useInfluenceMarker();
+
+        region.getInfluenceMarkers().add(
+                new InfluenceMarker(player.getPlayerId())
+        );
 
         history.add(region.getId());
 
-        // 🔄 6. przejście dalej
         nextPlayer(game);
-
-        // 🔁 7. zmiana rundy/fazy
         updateInfluencePhase(game);
     }
 
-    private void nextPlayer(GameState game) {
-
-        int index = game.getInitiativeOrder().indexOf(game.getCurrentPlayerId());
-
-        int nextIndex = (index + 1) % game.getInitiativeOrder().size();
-
-        game.setCurrentPlayerId(game.getInitiativeOrder().get(nextIndex));
-    }
     private void updateInfluencePhase(GameState game) {
 
-        int totalPlayers = game.getPlayers().size();
+        int players = game.getPlayers().size();
+
         int totalPlaced = game.getSetupInfluenceHistory().values().stream()
                 .mapToInt(Set::size)
                 .sum();
 
-        // 🧠 każda runda = liczba graczy
         if (game.getCurrentPhase() == Phase.SETUP_INFLUENCE_1 &&
-                totalPlaced == totalPlayers) {
+                totalPlaced == players) {
 
             game.setCurrentPhase(Phase.SETUP_INFLUENCE_2);
             return;
         }
 
         if (game.getCurrentPhase() == Phase.SETUP_INFLUENCE_2 &&
-                totalPlaced == totalPlayers * 2) {
+                totalPlaced == players * 2) {
 
+            game.getSetupInfluenceHistory().clear(); // cleanup
             game.setCurrentPhase(Phase.INITIATIVE);
         }
+    }
+
+    // =========================================================
+    // INITIATIVE PHASE
+    // =========================================================
+
+    public void advanceInitiative(GameState game, AdvanceInitiativeAction action) {
+
+        validatePhase(game, Phase.INITIATIVE);
+        validateTurn(game, action.getPlayerId());
+
+        PlayerState player = game.findPlayer(action.getPlayerId());
+
+        int steps = action.getSteps();
+
+        if (steps == 2) {
+            player.useDoubleMove();
+        } else if (steps == 1) {
+            player.moveOne();
+        } else {
+            throw new IllegalArgumentException("Invalid steps");
+        }
+
+        game.getInitiativeTrack().movePlayer(player.getPlayerId(), steps);
+
+        game.updateGlobalProgress(player);
+
+        nextPlayer(game);
+    }
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+
+    private RegionState findRegion(GameState game, UUID regionId) {
+        return game.getRegions().stream()
+                .filter(r -> r.getId().equals(regionId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Region not found"));
+    }
+
+    private void validateTurn(GameState game, UUID playerId) {
+        if (!game.getCurrentPlayerId().equals(playerId)) {
+            throw new IllegalStateException("Not this player's turn");
+        }
+    }
+
+    private void validatePhase(GameState game, Phase... phases) {
+        if (Arrays.stream(phases).noneMatch(p -> p == game.getCurrentPhase())) {
+            throw new IllegalStateException("Invalid phase: " + game.getCurrentPhase());
+        }
+    }
+
+    private void nextPlayer(GameState game) {
+
+        List<UUID> order = game.getInitiativeTrack().getTurnOrder();
+
+        int index = order.indexOf(game.getCurrentPlayerId());
+
+        if (index == -1) {
+            throw new IllegalStateException("Player not on initiative track");
+        }
+
+        int nextIndex = (index + 1) % order.size();
+
+        game.setCurrentPlayerId(order.get(nextIndex));
     }
 }

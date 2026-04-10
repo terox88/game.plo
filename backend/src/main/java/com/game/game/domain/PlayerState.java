@@ -44,6 +44,14 @@ public class PlayerState {
 
     private int availableActionMarkers;
     private int availableInfluenceMarkers;
+    @Builder.Default
+    private int stage = 1;
+
+    @Builder.Default
+    private int round = 1;
+
+    @Builder.Default
+    private boolean usedDoubleMoveInStage = false;
 
     public static PlayerState create(String name, Hero hero) {
         return PlayerState.builder()
@@ -165,6 +173,76 @@ public class PlayerState {
             case 3 -> mana3;
             default -> throw new IllegalArgumentException("Invalid mana level");
         };
+    }
+
+    public int getAvailableActionMarkers() {
+
+        return switch (stage) {
+            case 1, 2 -> switch (round) {
+                case 1 -> 3;
+                case 2 -> 4;
+                case 3 -> 5;
+                default -> throw new IllegalStateException("Invalid round for stage " + stage);
+            };
+            case 3, 4 -> switch (round) {
+                case 1 -> 4;
+                case 2 -> 5;
+                default -> throw new IllegalStateException("Invalid round for stage " + stage);
+            };
+            default -> throw new IllegalStateException("Invalid stage");
+        };
+    }
+
+    public void advance(int steps) {
+
+        for (int i = 0; i < steps; i++) {
+
+            if (isLastRoundInStage()) {
+                moveToNextStage();
+            } else {
+                round++;
+            }
+        }
+    }
+
+    private boolean isLastRoundInStage() {
+        return switch (stage) {
+            case 1, 2 -> round == 3;
+            case 3, 4 -> round == 2;
+            default -> throw new IllegalStateException("Invalid stage");
+        };
+    }
+
+    private void moveToNextStage() {
+
+        if (stage == 4) {
+
+            return;
+        }
+
+        stage++;
+        round = 1;
+
+        usedDoubleMoveInStage = false;
+    }
+
+    public void useDoubleMove() {
+
+        if (usedDoubleMoveInStage) {
+            throw new IllegalStateException("Double move already used in this stage");
+        }
+
+        usedDoubleMoveInStage = true;
+
+        advance(2);
+    }
+
+    public void moveOne() {
+        advance(1);
+    }
+
+    public boolean isVanDyken() {
+        return hero == Hero.PIER;
     }
 
 

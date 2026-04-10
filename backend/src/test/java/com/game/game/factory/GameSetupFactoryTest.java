@@ -30,7 +30,7 @@ class GameSetupFactoryTest {
         // 👥 players
         assertThat(game.getPlayers()).hasSize(2);
 
-        // 🌍 regions (zawsze 8)
+        // 🌍 regions
         assertThat(game.getRegions()).hasSize(8);
 
         // 🎯 action fields
@@ -39,26 +39,38 @@ class GameSetupFactoryTest {
         // 🐍 viper gorge
         assertThat(game.getViperGorge()).isNotNull();
 
-        // 🎯 tokeny dostępne
+        // 🎯 tokeny
         assertThat(game.getAvailableTokens()).isNotEmpty();
 
-        // 🔄 inicjatywa
-        assertThat(game.getInitiativeOrder()).hasSize(2);
+        // 🧠 initiative track
+        assertThat(game.getInitiativeTrack()).isNotNull();
+        assertThat(game.getInitiativeTrack().getSlots()).isNotEmpty();
 
-        // 👤 current player = pierwszy z listy
-        assertThat(game.getCurrentPlayerId())
-                .isEqualTo(players.get(0).getPlayerId());
+        // 👤 current player (pierwszy na tracku)
+        assertThat(game.getCurrentPlayerId()).isNotNull();
 
-        // 🎮 faza
+        // 🎮 faza startowa (setup!)
         assertThat(game.getCurrentPhase())
-                .isEqualTo(Phase.INITIATIVE);
+                .isEqualTo(Phase.SETUP_TOKENS);
 
         // ❄️ dead snow
         assertThat(game.getDeadSnow()).isEqualTo(0);
 
-        // 🔁 stage / round
-        assertThat(game.getStageNumber()).isEqualTo(1);
-        assertThat(game.getRoundNumber()).isEqualTo(1);
+        // 🧠 global progress
+        assertThat(game.getStageLast()).isEqualTo(1);
+        assertThat(game.getRoundLast()).isEqualTo(1);
+
+        // 👤 players state (ważne!)
+        game.getPlayers().forEach(player -> {
+            assertThat(player.getStage()).isEqualTo(1);
+            assertThat(player.getRound()).isEqualTo(1);
+            assertThat(player.isUsedDoubleMoveInStage()).isFalse();
+        });
+        assertThat(
+                game.getInitiativeTrack().getTurnOrder()
+        ).containsExactlyElementsOf(
+                players.stream().map(PlayerState::getPlayerId).toList()
+        );
     }
 
     @Test
