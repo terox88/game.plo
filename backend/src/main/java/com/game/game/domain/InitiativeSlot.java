@@ -3,6 +3,7 @@ package com.game.game.domain;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,10 +13,10 @@ public class InitiativeSlot {
 
     private int position;
 
-    private List<UUID> players;
+    private Deque<UUID> players;
 
     public void addPlayer(UUID playerId) {
-        players.add(playerId);
+        players.addFirst(playerId);
     }
 
     public void removePlayer(UUID playerId) {

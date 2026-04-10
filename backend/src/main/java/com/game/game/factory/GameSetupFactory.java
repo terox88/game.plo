@@ -58,12 +58,12 @@ public class GameSetupFactory {
 
 
         for (int i = 0; i < 10; i++) {
-            slots.add(new InitiativeSlot(i, new ArrayList<>()));
+            slots.add(new InitiativeSlot(i, new ArrayDeque<>()));
         }
 
         InitiativeSlot startSlot = slots.get(0);
 
-        players.forEach(p -> startSlot.addPlayer(p.getPlayerId()));
+        players.forEach(p -> startSlot.getPlayers().addLast(p.getPlayerId()));
 
         return InitiativeTrack.builder()
                 .slots(slots)

@@ -23,6 +23,7 @@ public class GameState {
     private UUID currentPlayerId;
 
     private Phase currentPhase;
+    private List<UUID> currentTurnOrder;
 
     private int deadSnow;
     private int stageLast;
@@ -63,11 +64,35 @@ public class GameState {
     }
 
     public List<UUID> getTurnOrder() {
-        return initiativeTrack.getTurnOrder();
+        return players.stream()
+                .sorted(
+                        Comparator
+                                .comparingInt(PlayerState::getStage).reversed()
+                                .thenComparingInt(PlayerState::getRound)
+                                .thenComparingInt(p -> getTrackOrder(p.getPlayerId()))
+                )
+                .map(PlayerState::getPlayerId)
+                .toList();
     }
 
     public List<PlayerState> getPlayers() {
         return Collections.unmodifiableList(players);
+    }
+
+    private int getTrackOrder(UUID playerId) {
+        return initiativeTrack.getTurnOrder().indexOf(playerId);
+    }
+
+    public List<UUID> calculateTurnOrder() {
+        return players.stream()
+                .sorted(
+                        Comparator
+                                .comparingInt(PlayerState::getStage).reversed()
+                                .thenComparingInt(PlayerState::getRound)
+                                .thenComparingInt(p -> getTrackOrder(p.getPlayerId()))
+                )
+                .map(PlayerState::getPlayerId)
+                .toList();
     }
 
 

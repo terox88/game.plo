@@ -174,6 +174,8 @@ public class GameEngine {
 
     public void advanceInitiative(GameState game, AdvanceInitiativeAction action) {
 
+        game.setCurrentTurnOrder(game.calculateTurnOrder());
+
         validatePhase(game, Phase.INITIATIVE);
         validateTurn(game, action.getPlayerId());
 
@@ -254,7 +256,7 @@ public class GameEngine {
 
     private void nextPlayer(GameState game) {
 
-        List<UUID> order = game.getInitiativeTrack().getTurnOrder();
+        List<UUID> order = game.getCurrentTurnOrder();
 
         int index = order.indexOf(game.getCurrentPlayerId());
 
@@ -283,4 +285,5 @@ public class GameEngine {
             throw new IllegalStateException("Invalid reputation level");
         }
     }
+
 }
