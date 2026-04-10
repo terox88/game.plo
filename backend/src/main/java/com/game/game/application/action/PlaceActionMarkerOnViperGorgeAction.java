@@ -7,8 +7,6 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class PlaceThornAction implements GameAction {
-
+public class PlaceActionMarkerOnViperGorgeAction implements GameAction {
     private UUID playerId;
-    private UUID regionId;
 }

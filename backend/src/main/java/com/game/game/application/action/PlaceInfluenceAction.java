@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class PlaceInfluenceAction {
+public class PlaceInfluenceAction implements GameAction {
 
     private UUID playerId;
     private UUID regionId;

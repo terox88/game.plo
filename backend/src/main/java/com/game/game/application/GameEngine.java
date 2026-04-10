@@ -4,6 +4,7 @@ import com.game.game.application.action.*;
 import com.game.game.domain.*;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class GameEngine {
 
@@ -16,7 +17,7 @@ public class GameEngine {
     public void assignToken(GameState game, AssignTokenToRegionAction action) {
 
         validatePhase(game, Phase.SETUP_TOKENS);
-        validateTurn(game, action.getPlayerId());
+        validateTurn(game, action);
 
         RegionState region = findRegion(game, action.getRegionId());
 
@@ -56,7 +57,7 @@ public class GameEngine {
     public void placeThorn(GameState game, PlaceThornAction action) {
 
         validatePhase(game, Phase.SETUP_THORN);
-        validateTurn(game, action.getPlayerId());
+        validateTurn(game, action);
 
         if (!game.isVanDykenInGame()) {
             throw new IllegalStateException("VanDyken not in game");
@@ -116,7 +117,7 @@ public class GameEngine {
     public void placeInfluence(GameState game, PlaceInfluenceAction action) {
 
         validatePhase(game, Phase.SETUP_INFLUENCE_1, Phase.SETUP_INFLUENCE_2);
-        validateTurn(game, action.getPlayerId());
+        validateTurn(game, action);
 
         RegionState region = findRegion(game, action.getRegionId());
 
@@ -177,7 +178,7 @@ public class GameEngine {
         game.setCurrentTurnOrder(game.calculateTurnOrder());
 
         validatePhase(game, Phase.INITIATIVE);
-        validateTurn(game, action.getPlayerId());
+        validateTurn(game, action);
 
         PlayerState player = game.findPlayer(action.getPlayerId());
 
@@ -230,6 +231,83 @@ public class GameEngine {
 
         player.setReputation(newLevel);
     }
+    // =========================================================
+    // PLANING
+    // =========================================================
+
+    public void assignActionOrder(GameState game, AssignActionOrderAction action) {
+
+        validatePhase(game, Phase.PLANNING_ORDER);
+        validateTurn(game, action);
+
+        if (action.getOrder() < 1 || action.getOrder() > 5) {
+            throw new IllegalArgumentException("Order must be between 1 and 5");
+        }
+
+        if (game.getUsedOrderNumbers().contains(action.getOrder())) {
+            throw new IllegalStateException("Order number already used");
+        }
+
+        if (game.getAssignedFields().contains(action.getField())) {
+            throw new IllegalStateException("Field already assigned");
+        }
+
+        game.getActionOrderAssignments().put(action.getField(), action.getOrder());
+        game.getUsedOrderNumbers().add(action.getOrder());
+        game.getAssignedFields().add(action.getField());
+
+        // 🔥 jeśli zostało jedno pole → auto-assign
+        autoAssignLastField(game);
+
+        nextPlayer(game);
+
+        if (game.getActionOrderAssignments().size() == 5) {
+            game.setCurrentPhase(Phase.PLANNING_ACTIONS);
+        }
+    }
+
+    public void placeActionMarker(GameState game, PlaceActionMarkerOnFieldAction action) {
+
+        validatePhase(game, Phase.PLANNING_ACTIONS);
+        validateTurn(game, action);
+
+        PlayerState player = game.findPlayer(action.getPlayerId());
+
+        if (player.getAvailableActionMarkers() <= 0) {
+            throw new IllegalStateException("No available markers");
+        }
+
+        ActionField field = findField(game, action.getField());
+        field.placeMarker(new ActionMarker(action.getPlayerId()));
+
+        player.useActionMarker();
+
+        nextPlayerSkippingFinished(game);
+    }
+
+    public void placeOnViperGorge(GameState game, PlaceActionMarkerOnViperGorgeAction action) {
+
+        validatePhase(game, Phase.PLANNING_ACTIONS);
+        validateTurn(game, action);
+
+        PlayerState player = game.findPlayer(action.getPlayerId());
+
+        if (player.getAvailableActionMarkers() <= 0) {
+            throw new IllegalStateException("No available markers");
+        }
+
+        if (player.getAvailableInfluenceMarkers() <= 0) {
+            throw new IllegalStateException("No available influence markers");
+        }
+
+        game.getViperGorge().addActionMarker(new ActionMarker(action.getPlayerId()));
+
+        player.useActionMarker();
+        game.getViperGorge().addInfluenceMarker(new InfluenceMarker(action.getPlayerId()));
+        player.useInfluenceMarker();
+
+        nextPlayerSkippingFinished(game);
+    }
 
     // =========================================================
     // HELPERS
@@ -242,8 +320,9 @@ public class GameEngine {
                 .orElseThrow(() -> new IllegalArgumentException("Region not found"));
     }
 
-    private void validateTurn(GameState game, UUID playerId) {
-        if (!game.getCurrentPlayerId().equals(playerId)) {
+    private void validateTurn(GameState game, GameAction action) {
+
+        if (!game.getCurrentPlayerId().equals(action.getPlayerId())) {
             throw new IllegalStateException("Not this player's turn");
         }
     }
@@ -284,6 +363,68 @@ public class GameEngine {
         if (newLevel < 0) {
             throw new IllegalStateException("Invalid reputation level");
         }
+    }
+
+    private void autoAssignLastField(GameState game) {
+
+        // musi być dokładnie 4 przypisane
+        if (game.getAssignedFields().size() != 4) {
+            return;
+        }
+
+        // 🔍 znajdź brakujące pole
+        ActionFieldType remainingField = Arrays.stream(ActionFieldType.values())
+                .filter(f -> !game.getAssignedFields().contains(f))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No remaining field to assign"));
+
+        // 🔍 znajdź brakującą liczbę
+        int remainingOrder = IntStream.rangeClosed(1, 5)
+                .filter(o -> !game.getUsedOrderNumbers().contains(o))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No remaining order number"));
+
+        // ✅ przypisz
+        game.getActionOrderAssignments().put(remainingField, remainingOrder);
+
+        // 🔥 (opcjonalnie, ale lepiej zachować spójność)
+        game.getAssignedFields().add(remainingField);
+        game.getUsedOrderNumbers().add(remainingOrder);
+    }
+
+    private void nextPlayerSkippingFinished(GameState game) {
+
+        List<UUID> order = game.getCurrentTurnOrder();
+
+        int index = order.indexOf(game.getCurrentPlayerId());
+
+        for (int i = 1; i <= order.size(); i++) {
+            UUID next = order.get((index + i) % order.size());
+
+            PlayerState p = game.findPlayer(next);
+
+            if (p.getAvailableActionMarkers() > 0) {
+                game.setCurrentPlayerId(next);
+                return;
+            }
+        }
+    }
+
+    private boolean allPlayersFinishedPlanning(GameState game) {
+        return game.getPlayers().stream()
+                .allMatch(p -> p.getAvailableActionMarkers() == 0);
+    }
+
+    private ActionField findField(GameState game, ActionFieldType fieldType) {
+
+        if (fieldType == null) {
+            throw new IllegalArgumentException("Action field type cannot be null");
+        }
+
+        return game.getActionFields().stream()
+                .filter(f -> f.getType() == fieldType)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Action field not found: " + fieldType));
     }
 
 }

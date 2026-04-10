@@ -8,7 +8,8 @@ public enum Phase {
     SETUP_INFLUENCE_2,
 
     INITIATIVE,
-    PLANNING,
+    PLANNING_ORDER,
+    PLANNING_ACTIONS,
     ACTION,
     VUKO,
     DOMINATION

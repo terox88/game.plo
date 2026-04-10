@@ -6,7 +6,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class AssignTokenToRegionAction {
+public class AssignTokenToRegionAction implements GameAction {
 
     private UUID playerId;
 

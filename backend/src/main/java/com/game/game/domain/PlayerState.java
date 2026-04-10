@@ -87,6 +87,23 @@ public class PlayerState {
         availableInfluenceMarkers++;
     }
 
+    public void useActionMarker() {
+
+        if (availableActionMarkers <= 0) {
+            throw new IllegalStateException("No available action markers");
+        }
+
+        availableActionMarkers--;
+    }
+    public void retrieveActionMarker() {
+
+        if (availableActionMarkers >= getActionMarkerLimitForCurrentRound()) {
+            throw new IllegalStateException("All action markers already available");
+        }
+
+        availableActionMarkers++;
+    }
+
     public void addGold(int amount) {
         if (amount < 0) {
             throw new IllegalArgumentException("Amount must be positive");
@@ -175,7 +192,7 @@ public class PlayerState {
         };
     }
 
-    public int getAvailableActionMarkers() {
+    public int getActionMarkerLimitForCurrentRound() {
 
         return switch (stage) {
             case 1, 2 -> switch (round) {
@@ -243,6 +260,10 @@ public class PlayerState {
 
     public boolean isVanDyken() {
         return hero == Hero.PIER;
+    }
+
+    public void resetActionMarkersForRound() {
+        availableActionMarkers = getActionMarkerLimitForCurrentRound();
     }
 
 
