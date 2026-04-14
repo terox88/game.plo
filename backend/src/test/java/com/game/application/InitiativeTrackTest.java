@@ -1,7 +1,7 @@
 package com.game.application;
 
 import com.game.game.application.GameEngine;
-import com.game.game.application.action.AdvanceInitiativeAction;
+import com.game.game.application.command.AdvanceInitiativeAction;
 import com.game.game.domain.Phase;
 import com.game.game.domain.PlayerState;
 import com.game.game.factory.GameSetupFactory;
@@ -34,7 +34,7 @@ public class InitiativeTrackTest {
 
         GameState game = gameFactory.createGame(players);
 
-        var order = game.getTurnOrder();
+        var order = game.getInitiativeTurnOrder();
 
         assertThat(order).containsExactly(
                 players.get(0).getPlayerId(),
@@ -87,30 +87,6 @@ public class InitiativeTrackTest {
         assertThat(slot.getPosition()).isEqualTo(2);
     }
 
-    @Test
-    void shouldUpdateTurnOrderAfterMovement() {
-
-        var players = List.of(
-                playerFactory.create("A", Hero.PIER),
-                playerFactory.create("B", Hero.OLAF)
-        );
-
-        GameState game = gameFactory.createGame(players);
-        var engine = new GameEngine();
-
-        UUID a = players.get(0).getPlayerId();
-        UUID b = players.get(1).getPlayerId();
-
-        game.setCurrentPhase(Phase.INITIATIVE);
-
-        // A idzie do przodu
-        engine.advanceInitiative(game, new AdvanceInitiativeAction(a, 2));
-
-        var order = game.getTurnOrder();
-
-        // B powinien być pierwszy (bo jest bardziej z tyłu)
-        assertThat(order.get(0)).isEqualTo(b);
-    }
 
     @Test
     void shouldOrderByStageThenRound() {
@@ -134,9 +110,10 @@ public class InitiativeTrackTest {
         // B robi więcej → wchodzi w stage2
         engine.advanceInitiative(game, new AdvanceInitiativeAction(b, 2));
         game.setCurrentPlayerId(b);
+        game.setCurrentPhase(Phase.INITIATIVE);
         engine.advanceInitiative(game, new AdvanceInitiativeAction(b, 1));
 
-        var order = game.getTurnOrder();
+        var order = game.getCurrentTurnOrder();
 
         // 🔥 B pierwszy (wyższy stage)
         assertThat(order.get(0)).isEqualTo(b);
@@ -159,6 +136,7 @@ public class InitiativeTrackTest {
         UUID a = players.get(0).getPlayerId();
         UUID b = players.get(1).getPlayerId();
         UUID c = players.get(2).getPlayerId();
+        engine.startInitiativePhase(game);
 
         // wszyscy na slot 1
         engine.advanceInitiative(game, new AdvanceInitiativeAction(a, 1));
@@ -184,6 +162,7 @@ public class InitiativeTrackTest {
         UUID playerId = players.get(0).getPlayerId();
 
         game.setCurrentPhase(Phase.INITIATIVE);
+        engine.startInitiativePhase(game);
 
         engine.advanceInitiative(game, new AdvanceInitiativeAction(playerId, 2));
 
@@ -204,6 +183,7 @@ public class InitiativeTrackTest {
         UUID playerId = players.get(0).getPlayerId();
 
         game.setCurrentPhase(Phase.INITIATIVE);
+        engine.startInitiativePhase(game);
 
         engine.advanceInitiative(game, new AdvanceInitiativeAction(playerId, 1));
 

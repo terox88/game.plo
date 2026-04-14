@@ -1,10 +1,7 @@
 package com.game.game.domain;
-
+import com.game.game.domain.action.ActionSubPhase;
 import lombok.*;
-
 import java.util.*;
-
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,45 +20,42 @@ public class GameState {
     private UUID currentPlayerId;
 
     private Phase currentPhase;
-    private List<UUID> currentTurnOrder;
+    private ActionSubPhase actionSubPhase;
 
+    // 🔥 SNAPSHOTY KOLEJNOŚCI
+    private List<UUID> currentTurnOrder;      // do rundy
+    private List<UUID> initiativeTurnOrder;   // do initiative
+
+    // PLANNING
     private List<ActionFieldType> actionResolutionOrder;
+
     @Builder.Default
     private Map<ActionFieldType, Integer> actionOrderAssignments = new HashMap<>();
+
     @Builder.Default
     private Set<Integer> usedOrderNumbers = new HashSet<>();
+
     @Builder.Default
     private Set<ActionFieldType> assignedFields = new HashSet<>();
+
     @Builder.Default
     private Map<UUID, Integer> placedMarkersInPlanning = new HashMap<>();
 
+    // GLOBAL PROGRESS
     private int deadSnow;
     private int stageLast;
     private int roundLast;
+
     @Builder.Default
-    private Map<UUID,Set<UUID>> setupInfluenceHistory = new HashMap<>();
+    private Map<UUID, Set<UUID>> setupInfluenceHistory = new HashMap<>();
 
-    public RegionState getRegionByNumber(int number) {
-        return regions.stream()
-                .filter(r -> r.getNumber() == number)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Region not found: " + number));
-    }
+    // ACTION STATE
+    private int currentFieldIndex;
+    private boolean viperGorgeResolved;
 
-    public boolean isVanDykenInGame() {
-        return players.stream().anyMatch(PlayerState::isVanDyken);
-    }
-    public PlayerState findPlayer(UUID playerId) {
-
-        if (playerId == null) {
-            throw new IllegalArgumentException("PlayerId cannot be null");
-        }
-
-        return players.stream()
-                .filter(p -> p.getPlayerId().equals(playerId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
-    }
+    // =========================================================
+    // 🔥 NIE USUWAJ TEGO — to było poprawne
+    // =========================================================
 
     public void updateGlobalProgress(PlayerState player) {
 
@@ -73,24 +67,29 @@ public class GameState {
         }
     }
 
-    public List<UUID> getTurnOrder() {
+    // =========================================================
+
+    public PlayerState findPlayer(UUID playerId) {
         return players.stream()
-                .sorted(
-                        Comparator
-                                .comparingInt(PlayerState::getStage).reversed()
-                                .thenComparingInt(PlayerState::getRound)
-                                .thenComparingInt(p -> getTrackOrder(p.getPlayerId()))
-                )
-                .map(PlayerState::getPlayerId)
-                .toList();
+                .filter(p -> p.getPlayerId().equals(playerId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
     }
 
     public List<PlayerState> getPlayers() {
         return Collections.unmodifiableList(players);
     }
 
+    public boolean isVanDykenInGame() {
+        return players.stream().anyMatch(PlayerState::isVanDyken);
+    }
+
     private int getTrackOrder(UUID playerId) {
-        return initiativeTrack.getTurnOrder().indexOf(playerId);
+        int index = initiativeTrack.getTurnOrder().indexOf(playerId);
+        if (index == -1) {
+            throw new IllegalStateException("Player not on initiative track");
+        }
+        return index;
     }
 
     public List<UUID> calculateTurnOrder() {
@@ -105,5 +104,11 @@ public class GameState {
                 .toList();
     }
 
-
+    public ActionField getActionField(ActionFieldType type) {
+        return actionFields.stream()
+                .filter(f -> f.getType() == type)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Field not found: " + type));
+    }
 }
+

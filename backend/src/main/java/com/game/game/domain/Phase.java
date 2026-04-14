@@ -11,6 +11,7 @@ public enum Phase {
     PLANNING_ORDER,
     PLANNING_ACTIONS,
     ACTION,
+    UNIT_ACTIVATION,
     VUKO,
     DOMINATION
 }

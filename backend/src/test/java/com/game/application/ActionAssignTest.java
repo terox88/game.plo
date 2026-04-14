@@ -1,9 +1,9 @@
 package com.game.application;
 
 import com.game.game.application.GameEngine;
-import com.game.game.application.action.AssignActionOrderAction;
-import com.game.game.application.action.PlaceActionMarkerOnFieldAction;
-import com.game.game.application.action.PlaceActionMarkerOnViperGorgeAction;
+import com.game.game.application.command.AssignActionOrderAction;
+import com.game.game.application.command.PlaceActionMarkerOnFieldAction;
+import com.game.game.application.command.PlaceActionMarkerOnViperGorgeAction;
 import com.game.game.factory.GameSetupFactory;
 import com.game.game.factory.PlayerStateFactory;
 import com.game.game.domain.*;

@@ -39,6 +39,7 @@ public class GameSetupFactory {
                 .initiativeTrack(track)
                 .reputationTrack(reputationTrack)
                 .currentTurnOrder(initOrder(players))
+                .initiativeTurnOrder(initOrder(players))
                 .currentPlayerId(players.get(0).getPlayerId())
                 .currentPhase(Phase.SETUP_TOKENS)
                 .actionResolutionOrder(defaultActionOrder())

@@ -1,6 +1,7 @@
+
 package com.game.game.application;
 
-import com.game.game.application.action.*;
+import com.game.game.application.command.*;
 import com.game.game.domain.*;
 
 import java.util.*;
@@ -9,6 +10,15 @@ import java.util.stream.IntStream;
 public class GameEngine {
 
     private final Random random = new Random();
+
+    // =========================================================
+    // 🔥 NOWE: START INITIATIVE PHASE
+    // =========================================================
+
+    public void startInitiativePhase(GameState game) {
+        game.setInitiativeTurnOrder(new ArrayList<>(game.getCurrentTurnOrder()));
+        game.setCurrentPlayerId(game.getInitiativeTurnOrder().get(0));
+    }
 
     // =========================================================
     // SETUP TOKENS
@@ -164,7 +174,7 @@ public class GameEngine {
         if (game.getCurrentPhase() == Phase.SETUP_INFLUENCE_2 &&
                 totalPlaced == players * 2) {
 
-            game.getSetupInfluenceHistory().clear(); // cleanup
+            game.getSetupInfluenceHistory().clear();
             game.setCurrentPhase(Phase.INITIATIVE);
         }
     }
@@ -174,8 +184,6 @@ public class GameEngine {
     // =========================================================
 
     public void advanceInitiative(GameState game, AdvanceInitiativeAction action) {
-
-        game.setCurrentTurnOrder(game.calculateTurnOrder());
 
         validatePhase(game, Phase.INITIATIVE);
         validateTurn(game, action);
@@ -197,10 +205,30 @@ public class GameEngine {
         game.updateGlobalProgress(player);
 
         nextPlayer(game);
+
+        // 🔥 NOWE
+        if (isLastPlayerInInitiative(game)) {
+            endInitiativePhase(game);
+        }
     }
+
+    // 🔥 NOWE
+    private boolean isLastPlayerInInitiative(GameState game) {
+        List<UUID> order = game.getInitiativeTurnOrder();
+        return game.getCurrentPlayerId().equals(order.get(0));
+    }
+
+    // 🔥 NOWE
+    private void endInitiativePhase(GameState game) {
+        game.setCurrentTurnOrder(game.calculateTurnOrder());
+        game.setCurrentPhase(Phase.PLANNING_ORDER);
+        game.setCurrentPlayerId(game.getCurrentTurnOrder().get(0));
+    }
+
     // =========================================================
     // REPUTATION
     // =========================================================
+
     public void changeReputation(GameState game, UUID playerId, int delta) {
 
         PlayerState player = game.findPlayer(playerId);
@@ -208,29 +236,25 @@ public class GameEngine {
         int oldLevel = player.getReputation();
         int newLevel = oldLevel + delta;
 
-        // 🔒 walidacje domenowe
+        validateReputationChange(oldLevel, newLevel);
 
-       validateReputationChange(oldLevel, newLevel);
-
-       if (oldLevel == newLevel) {
+        if (oldLevel == newLevel) {
             return;
         }
 
         ReputationTrack track = game.getReputationTrack();
 
-        // usuń z poprzedniego slotu
         track.getSlot(oldLevel).remove(playerId);
 
         if (delta > 0) {
-            // 🔻 pogorszenie → NA WIERZCH
             track.getSlot(newLevel).addOnTop(playerId);
         } else {
-            // 🔺 poprawa → NA SPÓD
             track.getSlot(newLevel).addAtBottom(playerId);
         }
 
         player.setReputation(newLevel);
     }
+
     // =========================================================
     // PLANING
     // =========================================================
@@ -256,7 +280,6 @@ public class GameEngine {
         game.getUsedOrderNumbers().add(action.getOrder());
         game.getAssignedFields().add(action.getField());
 
-        // 🔥 jeśli zostało jedno pole → auto-assign
         autoAssignLastField(game);
 
         nextPlayer(game);
@@ -279,7 +302,7 @@ public class GameEngine {
         }
 
         ActionField field = findField(game, action.getField());
-        field.placeMarker(new ActionMarker(action.getPlayerId()));
+        field.placeMarker(new ActionMarker(action.getPlayerId(), field.getType()));
 
         player.useActionMarker();
 
@@ -305,7 +328,7 @@ public class GameEngine {
             throw new IllegalStateException("No available influence markers");
         }
 
-        game.getViperGorge().addActionMarker(new ActionMarker(action.getPlayerId()));
+        game.getViperGorge().addActionMarker(new ActionMarker(action.getPlayerId(),ActionFieldType.VIPER_GORGE));
 
         player.useActionMarker();
         game.getViperGorge().addInfluenceMarker(new InfluenceMarker(action.getPlayerId()));
@@ -329,9 +352,8 @@ public class GameEngine {
                 .orElseThrow(() -> new IllegalArgumentException("Region not found"));
     }
 
-    private void validateTurn(GameState game, GameAction action) {
-
-        if (!game.getCurrentPlayerId().equals(action.getPlayerId())) {
+    private void validateTurn(GameState game, GameActionCommand command) {
+        if (!game.getCurrentPlayerId().equals(command.getPlayerId())) {
             throw new IllegalStateException("Not this player's turn");
         }
     }
@@ -344,7 +366,14 @@ public class GameEngine {
 
     private void nextPlayer(GameState game) {
 
-        List<UUID> order = game.getCurrentTurnOrder();
+        List<UUID> order;
+
+        if (game.getCurrentPhase() == Phase.INITIATIVE) {
+            order = game.getInitiativeTurnOrder();
+        } else {
+            order = game.getCurrentTurnOrder();
+        }
+
         if (order == null || order.isEmpty()) {
             throw new IllegalStateException("Turn order not initialized");
         }
@@ -359,24 +388,6 @@ public class GameEngine {
 
         game.setCurrentPlayerId(order.get(nextIndex));
     }
-
-    private void validateReputationChange(int oldLevel, int newLevel) {
-
-        if (newLevel > 10) {
-            throw new IllegalStateException("Cannot go beyond reputation level 9");
-        }
-
-        // ❗ blokada powrotu na 0
-        if (newLevel == 0 && oldLevel != 0) {
-            throw new IllegalStateException("Cannot return to Yin-Yang");
-        }
-
-        // ❗ dodatkowo: nie schodzimy poniżej 0
-        if (newLevel < 0) {
-            throw new IllegalStateException("Invalid reputation level");
-        }
-    }
-
     private void autoAssignLastField(GameState game) {
 
         // musi być dokładnie 4 przypisane
@@ -403,7 +414,6 @@ public class GameEngine {
         game.getAssignedFields().add(remainingField);
         game.getUsedOrderNumbers().add(remainingOrder);
     }
-
     private void nextPlayerSkippingFinished(GameState game) {
 
         List<UUID> order = game.getCurrentTurnOrder();
@@ -450,4 +460,26 @@ public class GameEngine {
                 .orElseThrow(() -> new IllegalArgumentException("Action field not found: " + fieldType));
     }
 
+    private void validateReputationChange(int oldLevel, int newLevel) {
+
+        if (newLevel > 10) {
+            throw new IllegalStateException("Cannot go beyond reputation level 9");
+        }
+
+        // ❗ blokada powrotu na 0
+        if (newLevel == 0 && oldLevel != 0) {
+            throw new IllegalStateException("Cannot return to Yin-Yang");
+        }
+
+        // ❗ dodatkowo: nie schodzimy poniżej 0
+        if (newLevel < 0) {
+            throw new IllegalStateException("Invalid reputation level");
+        }
+    }
+
+
+
+
+
 }
+

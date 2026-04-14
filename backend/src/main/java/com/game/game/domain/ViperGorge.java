@@ -3,26 +3,38 @@ package com.game.game.domain;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Getter
 @NoArgsConstructor
 public class ViperGorge {
 
-    private List<ActionMarker> actionMarkers = new ArrayList<>();
+
+    private Deque<ActionMarker> actionMarkers = new ArrayDeque<>();
 
     private List<InfluenceMarker> influenceMarkers = new ArrayList<>();
 
+
     public void addActionMarker(ActionMarker marker) {
-        actionMarkers.add(marker);
+        actionMarkers.push(marker); // LIFO
     }
 
-    public void removeActionMarker(ActionMarker marker) {
-        actionMarkers.remove(marker);
+    public ActionMarker popActionMarker() {
+        return actionMarkers.pop();
     }
+
+    public boolean hasActionMarkers() {
+        return !actionMarkers.isEmpty();
+    }
+
 
     public void addInfluenceMarker(InfluenceMarker marker) {
         influenceMarkers.add(marker);
+    }
+
+    public List<InfluenceMarker> getInfluenceMarkersByPlayer(UUID playerId) {
+        return influenceMarkers.stream()
+                .filter(m -> m.getPlayerId().equals(playerId))
+                .toList();
     }
 }

@@ -1,4 +1,4 @@
-package com.game.game.application.action;
+package com.game.game.application.command;
 
 import lombok.*;
 
@@ -6,7 +6,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class AssignTokenToRegionAction implements GameAction {
+public class AssignTokenToRegionAction implements GameActionCommand {
 
     private UUID playerId;
 

@@ -1,4 +1,4 @@
-package com.game.game.application.action;
+package com.game.game.application.command;
 
 import com.game.game.domain.ActionFieldType;
 import lombok.AllArgsConstructor;
@@ -8,8 +8,8 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class PlaceActionMarkerOnFieldAction implements GameAction{
-
+public class AssignActionOrderAction implements GameActionCommand {
     private UUID playerId;
     private ActionFieldType field;
+    private int order;
 }

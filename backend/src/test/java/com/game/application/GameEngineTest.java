@@ -1,8 +1,8 @@
 package com.game.game.application;
 
-import com.game.game.application.action.AssignTokenToRegionAction;
-import com.game.game.application.action.PlaceInfluenceAction;
-import com.game.game.application.action.PlaceThornAction;
+import com.game.game.application.command.AssignTokenToRegionAction;
+import com.game.game.application.command.PlaceInfluenceAction;
+import com.game.game.application.command.PlaceThornAction;
 import com.game.game.domain.*;
 import com.game.game.factory.*;
 import org.junit.jupiter.api.Test;

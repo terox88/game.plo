@@ -1,4 +1,4 @@
-package com.game.game.application.action;
+package com.game.game.application.command;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,8 +7,6 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class PlaceInfluenceAction implements GameAction {
-
+public class PlaceActionMarkerOnViperGorgeAction implements GameActionCommand {
     private UUID playerId;
-    private UUID regionId;
 }
