@@ -192,6 +192,16 @@ public class PlayerState {
         };
     }
 
+    public void setMana(int level, int value) {
+         switch (level) {
+            case 0 -> mana0 = value;
+            case 1 -> mana1 = value;
+            case 2 -> mana2 = value;
+            case 3 -> mana3 = value;
+            default -> throw new IllegalArgumentException("Invalid mana level");
+        };
+    }
+
     public int getActionMarkerLimitForCurrentRound() {
 
         return switch (stage) {
@@ -265,6 +275,8 @@ public class PlayerState {
     public void resetActionMarkersForRound() {
         availableActionMarkers = getActionMarkerLimitForCurrentRound();
     }
+
+
 
 
 }
