@@ -144,24 +144,24 @@ public class PlayerState {
         population -= amount;
     }
 
-    public void spendMana(int level) {
+    public void spendMana(int level, int amount) {
 
         switch (level) {
             case 0 -> {
-                if (mana0 <= 0) throw new IllegalStateException("No mana level 0");
-                mana0--;
+                if (mana0 < amount) throw new IllegalStateException("No mana level 0");
+                mana0-=amount;
             }
             case 1 -> {
-                if (mana1 <= 0) throw new IllegalStateException("No mana level 1");
-                mana1--;
+                if (mana1 < amount) throw new IllegalStateException("No mana level 1");
+                mana1-= amount;
             }
             case 2 -> {
-                if (mana2 <= 0) throw new IllegalStateException("No mana level 2");
-                mana2--;
+                if (mana2 < amount) throw new IllegalStateException("No mana level 2");
+                mana2-= amount;
             }
             case 3 -> {
-                if (mana3 <= 0) throw new IllegalStateException("No mana level 3");
-                mana3--;
+                if (mana3 < amount) throw new IllegalStateException("No mana level 3");
+                mana3-= amount;
             }
             default -> throw new IllegalArgumentException("Invalid mana level: " + level);
         }

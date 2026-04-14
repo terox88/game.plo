@@ -12,13 +12,13 @@ import java.util.List;
 public class LevelAbilities {
 
     private int level;
-    private int maxSlots;
+    private int availableSlots;
 
     @Builder.Default
     private List<AbilitiesType> abilities = new ArrayList<>();
 
     public void addAbility(AbilitiesType ability) {
-        if (abilities.size() >= maxSlots) {
+        if (abilities.size() >= availableSlots) {
             throw new IllegalStateException("No free ability slots for level " + level);
         }
         abilities.add(ability);

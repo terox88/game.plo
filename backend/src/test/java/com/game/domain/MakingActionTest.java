@@ -1,15 +1,13 @@
 package com.game.domain;
 
-import com.game.game.domain.ActionFieldType;
-import com.game.game.domain.ActionMarker;
-import com.game.game.domain.GameState;
-import com.game.game.domain.Hero;
+import com.game.game.domain.*;
 import com.game.game.domain.action.*;
 import com.game.game.factory.GameSetupFactory;
 import com.game.game.factory.PlayerStateFactory;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -176,5 +174,325 @@ public class MakingActionTest {
 
         // dead snow +1
         assertThat(game.getDeadSnow()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldSummonUnitCorrectly() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 2);
+
+        RegionState region = game.getRegions().get(0);
+        region.getFeatures().add(RegionFeature.IN_GAME);
+        region.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        action.handleDecision(context, new PlayerDecision(
+                new SummonDecision(1, Map.of(region.getNumber(), 1))
+        ));
+
+        assertThat(region.getUnits()).hasSize(1);
+        assertThat(player.getUnitLevel1()).isEqualTo(2); // 3 - 1
+    }
+
+    @Test
+    void shouldThrowWhenNotEnoughMana() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 0);
+
+        RegionState region = game.getRegions().get(0);
+        region.getFeatures().add(RegionFeature.IN_GAME);
+        region.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new SummonDecision(1, Map.of(region.getNumber(), 1))
+                ))
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldThrowWhenNoInfluenceOrUnitInRegion() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 2);
+
+        RegionState region = game.getRegions().get(0);
+        region.getFeatures().add(RegionFeature.IN_GAME);
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new SummonDecision(1, Map.of(region.getNumber(), 1))
+                ))
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldSummonToMultipleRegions() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 3);
+
+        RegionState r1 = game.getRegions().get(0);
+        RegionState r2 = game.getRegions().get(1);
+        r1.getFeatures().add(RegionFeature.IN_GAME);
+        r2.getFeatures().add(RegionFeature.IN_GAME);
+
+        r1.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+        r2.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        action.handleDecision(context, new PlayerDecision(
+                new SummonDecision(1, Map.of(
+                        r1.getNumber(), 1,
+                        r2.getNumber(), 1
+                ))
+        ));
+
+        assertThat(r1.getUnits()).hasSize(1);
+        assertThat(r2.getUnits()).hasSize(1);
+    }
+
+    @Test
+    void shouldApplyVanDykenBonus() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER) // VanDyken
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 1);
+
+        RegionState region = game.getRegions().get(0);
+        region.getFeatures().add(RegionFeature.IN_GAME);
+        region.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        action.handleDecision(context, new PlayerDecision(
+                new SummonDecision(1, Map.of(region.getNumber(), 1))
+        ));
+
+        // 1 * level(1) + 2 bonus = 3
+        assertThat(player.getReputation()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldIncreaseDeadSnow() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 1);
+
+        RegionState region = game.getRegions().get(0);
+        region.getFeatures().add(RegionFeature.IN_GAME);
+        region.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        action.handleDecision(context, new PlayerDecision(
+                new SummonDecision(1, Map.of(region.getNumber(), 1))
+        ));
+
+        assertThat(game.getDeadSnow()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldAllowSkippingSummon() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        var result = action.handleDecision(context, new PlayerDecision(MakingChoice.PASS));
+
+        assertThat(result.requiresDecision()).isTrue();
+    }
+
+    @Test
+    void shouldThrowWhenRegionIsNotActive() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 1);
+
+        RegionState region = game.getRegions().get(0);
+
+        region.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new SummonDecision(1, Map.of(region.getNumber(), 1))
+                ))
+        ).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("not active region");
+    }
+
+    @Test
+    void shouldAllowSummonOnActiveRegion() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(1, 1);
+
+        RegionState region = game.getRegions().get(0);
+
+        region.getFeatures().add(RegionFeature.IN_GAME);
+
+        region.getInfluenceMarkers().add(new InfluenceMarker(playerId));
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.SUMMON));
+
+        action.handleDecision(context, new PlayerDecision(
+                new SummonDecision(1, Map.of(region.getNumber(), 1))
+        ));
+
+        assertThat(region.getUnits()).hasSize(1);
     }
 }

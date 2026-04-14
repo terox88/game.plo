@@ -17,4 +17,11 @@ public class Unit {
     private int level;
 
     private UUID regionId;
+
+    public Unit(UUID ownerId, int level, UUID regionId) {
+        this.id = UUID.randomUUID();
+        this.ownerId = ownerId;
+        this.level = level;
+        this.regionId = regionId;
+    }
 }

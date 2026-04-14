@@ -1,11 +1,10 @@
 
 package com.game.game.domain.action;
-import com.game.game.domain.GameState;
-import com.game.game.domain.PlayerState;
-import com.game.game.domain.ReputationService;
+import com.game.game.domain.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class MakingAction implements GameActionDomain {
@@ -135,7 +134,14 @@ public class MakingAction implements GameActionDomain {
             }
 
             case SUMMON_SELECT -> {
-                handleSummon(context);
+
+                if (decision.getValue() == MakingChoice.PASS) {
+                    markUsed(context, USED_SUMMON);
+                    context.getState().put(STEP, MakingStep.CHOOSE_ACTION);
+                    return nextStep(context);
+                }
+
+                handleSummon(context, decision);
                 context.getState().put(STEP, MakingStep.CHOOSE_ACTION);
                 return nextStep(context);
             }
@@ -226,16 +232,127 @@ public class MakingAction implements GameActionDomain {
         return context.getGame().findPlayer(playerId);
     }
 
-    // =========================
-    // STUBS
-    // =========================
 
     private void handleUpgrade(ActionContext context) {
         markUsed(context, USED_UPGRADE);
     }
 
-    private void handleSummon(ActionContext context) {
+    private void handleSummon(ActionContext context, PlayerDecision decision) {
+
+        SummonDecision summon = (SummonDecision) decision.getValue();
+
+        int level = summon.level();
+        Map<Integer, Integer> placements = summon.regionToAmount();
+
+        PlayerState player = getPlayer(context);
+        GameState game = context.getGame();
+        UUID playerId = context.getMarker().getPlayerId();
+
+        int totalUnits = placements.values().stream().mapToInt(i -> i).sum();
+
+        // =========================
+        // WALIDACJE
+        // =========================
+
+        if (level < 1 || level > 3) {
+            throw new IllegalArgumentException("Invalid unit level");
+        }
+
+        if (totalUnits <= 0) {
+            throw new IllegalArgumentException("Must summon at least 1 unit");
+        }
+
+        // dostępność jednostek
+        int available = getAvailableUnits(player, level);
+
+        if (totalUnits > available) {
+            throw new IllegalStateException("Not enough units available");
+        }
+
+        // mana
+        int mana = player.getMana(level);
+
+        if (mana < totalUnits) {
+            throw new IllegalStateException("Not enough mana");
+        }
+
+        // =========================
+        // WALIDACJA REGIONÓW
+        // =========================
+
+        for (var entry : placements.entrySet()) {
+
+            RegionState region = game.getRegionByNumber(entry.getKey());
+
+            boolean hasInfluence = region.getInfluenceMarkers().stream()
+                    .anyMatch(m -> m.getPlayerId().equals(playerId));
+
+            boolean hasUnit = region.getUnits().stream()
+                    .anyMatch(u -> u.getOwnerId().equals(playerId));
+            if (!region.isActive()) {
+                throw new IllegalStateException("Cannot summon to not active region");
+            }
+            if (!hasInfluence && !hasUnit) {
+                throw new IllegalStateException("Cannot summon to region without influence or unit");
+            }
+
+        }
+
+        // =========================
+        // WYKONANIE
+        // =========================
+
+        // mana -
+        player.setMana(level, mana - totalUnits);
+
+        // units -
+        decreaseUnits(player, level, totalUnits);
+
+        // placement
+        for (var entry : placements.entrySet()) {
+
+            RegionState region = game.getRegionByNumber(entry.getKey());
+
+            for (int i = 0; i < entry.getValue(); i++) {
+                region.getUnits().add(new Unit(playerId, level, region.getId()));
+            }
+        }
+
+        // =========================
+        // EFEKTY
+        // =========================
+
+        game.setDeadSnow(game.getDeadSnow() + 1);
+
+        int reputationDelta = totalUnits * level;
+
+        if (level == 1 && player.isVanDyken()) {
+            reputationDelta += 2;
+        }
+
+        ReputationService reputationService = new ReputationService();
+
+        reputationService.changeReputation(game, playerId, reputationDelta);
+
         markUsed(context, USED_SUMMON);
+    }
+
+    private int getAvailableUnits(PlayerState player, int level) {
+        return switch (level) {
+            case 1 -> player.getUnitLevel1();
+            case 2 -> player.getUnitLevel2();
+            case 3 -> player.getUnitLevel3();
+            default -> throw new IllegalArgumentException();
+        };
+    }
+
+    private void decreaseUnits(PlayerState player, int level, int amount) {
+        switch (level) {
+            case 1 -> player.setUnitLevel1(player.getUnitLevel1() - amount);
+            case 2 -> player.setUnitLevel2(player.getUnitLevel2() - amount);
+            case 3 -> player.setUnitLevel3(player.getUnitLevel3() - amount);
+            default -> throw new IllegalArgumentException();
+        }
     }
 }
 

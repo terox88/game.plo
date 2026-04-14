@@ -110,5 +110,10 @@ public class GameState {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Field not found: " + type));
     }
+
+    public RegionState getRegionByNumber(int number) {
+        return regions.stream().filter(r -> r.getNumber() == number).findFirst()
+                .orElseThrow(()-> new IllegalArgumentException("Region number " + number + "not found"));
+    }
 }
 
