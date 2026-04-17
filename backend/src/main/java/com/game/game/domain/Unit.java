@@ -17,6 +17,8 @@ public class Unit {
     private int level;
 
     private UUID regionId;
+    private boolean isKilled;
+    private boolean hasAttacked;
 
     public Unit(UUID ownerId, int level, UUID regionId) {
         this.id = UUID.randomUUID();

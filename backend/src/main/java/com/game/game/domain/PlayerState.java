@@ -18,13 +18,13 @@ public class PlayerState {
     private Hero hero;
 
     @Builder.Default
-    private LevelAbilities level1 = new LevelAbilities(1, 2, new ArrayList<>());
+    private LevelAbilities level1 = new LevelAbilities();
 
     @Builder.Default
-    private LevelAbilities level2 = new LevelAbilities(2, 3, new ArrayList<>());
+    private LevelAbilities level2 = new LevelAbilities();
 
     @Builder.Default
-    private LevelAbilities level3 = new LevelAbilities(3, 4, new ArrayList<>());
+    private LevelAbilities level3 = new LevelAbilities();
 
     private int unitLevel1;
     private int unitLevel2;

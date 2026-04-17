@@ -128,7 +128,14 @@ public class MakingAction implements GameActionDomain {
             }
 
             case UPGRADE_SELECT -> {
-                handleUpgrade(context);
+
+                if (decision.getValue() == MakingChoice.PASS) {
+                    markUsed(context, USED_UPGRADE);
+                    context.getState().put(STEP, MakingStep.CHOOSE_ACTION);
+                    return nextStep(context);
+                }
+
+                handleUpgrade(context, decision);
                 context.getState().put(STEP, MakingStep.CHOOSE_ACTION);
                 return nextStep(context);
             }
@@ -233,7 +240,72 @@ public class MakingAction implements GameActionDomain {
     }
 
 
-    private void handleUpgrade(ActionContext context) {
+    private void handleUpgrade(ActionContext context, PlayerDecision decision) {
+
+        UpgradeDecision upgrade = (UpgradeDecision) decision.getValue();
+
+        int level = upgrade.level();
+        AbilitiesType newAbility = upgrade.abilityToAdd();
+        AbilitiesType toReplace = upgrade.abilityToReplace();
+
+        PlayerState player = getPlayer(context);
+        GameState game = context.getGame();
+
+        LevelAbilities abilities = getLevelAbilities(player, level);
+
+        // =========================
+        // WALIDACJE
+        // =========================
+
+        // brak slotów dla VanDyken lvl1
+        if (player.isVanDyken() && level == 1) {
+            throw new IllegalStateException("Cannot upgrade this unit level");
+        }
+
+        // koszt
+        applyUpgradeCost(player, newAbility);
+
+        // duplikaty (lvl 1 i 2)
+        if (level < 3 && abilities.getAbilities().contains(newAbility)) {
+            throw new IllegalStateException("Duplicate ability not allowed");
+        }
+
+        boolean hasFreeSlot = abilities.getAbilities().size() < abilities.getGlobalSlots();
+
+        // =========================
+        // ADD
+        // =========================
+
+        if (hasFreeSlot) {
+            abilities.addAbility(newAbility);
+        }
+        // =========================
+        // REPLACE
+        // =========================
+        else {
+
+            if (toReplace == null) {
+                throw new IllegalStateException("Must specify ability to replace");
+            }
+
+            int index = abilities.getAbilities().indexOf(toReplace);
+
+            if (index < abilities.getBaseAbilitiesCount()) {
+                throw new IllegalStateException("Cannot replace base ability");
+            }
+
+            abilities.getAbilities().set(index, newAbility);
+        }
+
+        // =========================
+        // EFEKTY
+        // =========================
+
+        game.setDeadSnow(game.getDeadSnow() + 1);
+
+        ReputationService reputationService = new ReputationService();
+        reputationService.changeReputation(game, player.getPlayerId(), 1);
+
         markUsed(context, USED_UPGRADE);
     }
 
@@ -352,6 +424,37 @@ public class MakingAction implements GameActionDomain {
             case 2 -> player.setUnitLevel2(player.getUnitLevel2() - amount);
             case 3 -> player.setUnitLevel3(player.getUnitLevel3() - amount);
             default -> throw new IllegalArgumentException();
+        }
+    }
+
+    private LevelAbilities getLevelAbilities(PlayerState player, int level) {
+        return switch (level) {
+            case 1 -> player.getLevel1();
+            case 2 -> player.getLevel2();
+            case 3 -> player.getLevel3();
+            default -> throw new IllegalArgumentException();
+        };
+    }
+
+    private void applyUpgradeCost(PlayerState player, AbilitiesType ability) {
+
+        switch (ability) {
+
+            case SPEED -> {
+                player.spendMana(0, 2);
+            }
+
+            case ATTACK, SHIELD -> {
+                player.spendMana(0, 1);
+                player.spendGold(1);
+            }
+
+            case DOMINATION -> {
+                player.spendMana(0, 1);
+                player.spendPopulation(1);
+            }
+
+            default -> throw new IllegalArgumentException("Unsupported ability");
         }
     }
 }
