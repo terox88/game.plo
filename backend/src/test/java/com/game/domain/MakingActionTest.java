@@ -495,4 +495,229 @@ public class MakingActionTest {
 
         assertThat(region.getUnits()).hasSize(1);
     }
+
+    @Test
+    void shouldAddAbilityWhenFreeSlotAvailable() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(0, 2);
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        action.handleDecision(context, new PlayerDecision(
+                new UpgradeDecision(1, AbilitiesType.SPEED, null)
+        ));
+
+        assertThat(player.getLevel1().getAbilities())
+                .contains(AbilitiesType.SPEED);
+    }
+
+    @Test
+    void shouldThrowWhenNotEnoughManaForUpgrade() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new UpgradeDecision(1, AbilitiesType.SPEED, null)
+                ))
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldThrowWhenDuplicateAbilityOnLevel1Or2() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(0, 2);
+
+        // OLAF ma już ATTACK na level 1
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new UpgradeDecision(1, AbilitiesType.ATTACK, null)
+                ))
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldThrowWhenVanDykenLevel1Upgrade() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.PIER)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(0, 2);
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new UpgradeDecision(1, AbilitiesType.SPEED, null)
+                ))
+        ).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldReplaceAbilityWhenNoFreeSlots() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.ULRIKE)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(0, 2);
+
+        var abilities = player.getLevel1();
+
+        // wypełniamy sloty ręcznie
+        abilities.addAbility(AbilitiesType.SPEED);
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        action.handleDecision(context, new PlayerDecision(
+                new UpgradeDecision(1, AbilitiesType.SHIELD, AbilitiesType.SPEED)
+        ));
+
+        assertThat(abilities.getAbilities())
+                .contains(AbilitiesType.SHIELD)
+                .doesNotContain(AbilitiesType.SPEED);
+    }
+
+    @Test
+    void shouldNotReplaceBaseAbility() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(0, 2);
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        // ATTACK jest nadrukowane
+        assertThatThrownBy(() ->
+                action.handleDecision(context, new PlayerDecision(
+                        new UpgradeDecision(1, AbilitiesType.SPEED, AbilitiesType.ATTACK)
+                ))
+        ).isInstanceOf(IllegalStateException.class);
+    }
+    @Test
+    void shouldApplyUpgradeEffects() {
+
+        var players = List.of(
+                playerFactory.create("A", Hero.OLAF)
+        );
+
+        GameState game = gameFactory.createGame(players);
+
+        UUID playerId = players.get(0).getPlayerId();
+        PlayerState player = game.findPlayer(playerId);
+
+        player.setMana(0, 2);
+
+        MakingAction action = new MakingAction();
+
+        ActionContext context = new ActionContext(
+                game,
+                new ActionMarker(playerId, ActionFieldType.MAKING)
+        );
+
+        action.start(context);
+        action.handleDecision(context, new PlayerDecision(MakingChoice.UPGRADE));
+
+        action.handleDecision(context, new PlayerDecision(
+                new UpgradeDecision(1, AbilitiesType.SPEED, null)
+        ));
+
+        assertThat(game.getDeadSnow()).isEqualTo(1);
+        assertThat(player.getReputation()).isEqualTo(1);
+    }
 }

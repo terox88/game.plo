@@ -7,16 +7,21 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class LevelAbilities {
 
     private int level;
     private int globalSlots;
     private int availableSlots;
+    private List<AbilitiesType> abilities;
+    private int baseAbilitiesCount;
 
-    @Builder.Default
-    private List<AbilitiesType> abilities = new ArrayList<>();
+    public LevelAbilities(int level, int globalSlots, int availableSlots, List<AbilitiesType> abilities) {
+        this.level = level;
+        this.globalSlots = globalSlots;
+        this.availableSlots = availableSlots;
+        this.abilities = abilities;
+        this.baseAbilitiesCount = abilities.size();
+    }
 
 
     public void addAbility(AbilitiesType ability) {

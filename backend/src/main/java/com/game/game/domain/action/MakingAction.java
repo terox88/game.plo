@@ -270,31 +270,33 @@ public class MakingAction implements GameActionDomain {
             throw new IllegalStateException("Duplicate ability not allowed");
         }
 
-        boolean hasFreeSlot = abilities.getAbilities().size() < abilities.getGlobalSlots();
 
         // =========================
         // ADD
         // =========================
 
-        if (hasFreeSlot) {
-            abilities.addAbility(newAbility);
-        }
-        // =========================
-        // REPLACE
-        // =========================
-        else {
-
-            if (toReplace == null) {
-                throw new IllegalStateException("Must specify ability to replace");
-            }
+        if (toReplace != null) {
+            // 🔥 ZAWSZE replace jeśli podano
 
             int index = abilities.getAbilities().indexOf(toReplace);
+
+            if (index == -1) {
+                throw new IllegalStateException("Ability to replace not found");
+            }
 
             if (index < abilities.getBaseAbilitiesCount()) {
                 throw new IllegalStateException("Cannot replace base ability");
             }
 
             abilities.getAbilities().set(index, newAbility);
+        }
+        else {
+
+            if (abilities.getAbilities().size() >= abilities.getGlobalSlots()) {
+                throw new IllegalStateException("No free slots");
+            }
+
+            abilities.addAbility(newAbility);
         }
 
         // =========================
@@ -303,7 +305,6 @@ public class MakingAction implements GameActionDomain {
 
         game.setDeadSnow(game.getDeadSnow() + 1);
 
-        ReputationService reputationService = new ReputationService();
         reputationService.changeReputation(game, player.getPlayerId(), 1);
 
         markUsed(context, USED_UPGRADE);
@@ -401,8 +402,6 @@ public class MakingAction implements GameActionDomain {
         if (level == 1 && player.isVanDyken()) {
             reputationDelta += 2;
         }
-
-        ReputationService reputationService = new ReputationService();
 
         reputationService.changeReputation(game, playerId, reputationDelta);
 
