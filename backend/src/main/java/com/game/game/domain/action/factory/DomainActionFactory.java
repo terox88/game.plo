@@ -10,7 +10,7 @@ public class DomainActionFactory {
     public GameActionDomain get(ActionFieldType type) {
         return switch (type) {
             case MAKING -> new MakingAction();
-            case MOVE -> new ActionResult.MoveAction();
+            case MOVE -> new MoveAction();
             case INFLUENCES -> new InfluenceAction();
             case MOUNTAIN -> new MountainAction();
             case SHADOW_RAVE -> new ShadowRaveAction();

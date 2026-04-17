@@ -15,7 +15,7 @@ public class Unit {
     private UUID ownerId;
 
     private int level;
-
+    @Setter
     private UUID regionId;
     private boolean isKilled;
     private boolean hasAttacked;
