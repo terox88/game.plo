@@ -56,6 +56,13 @@ public class MountainAction implements GameActionDomain {
         if (influenceCount == 0 && unitIds.isEmpty()) {
             throw new IllegalStateException("Nothing to move");
         }
+        // =========================
+        // WALIDACJA FROM
+        // =========================
+
+        if (from.isClosed()) {
+            throw new IllegalStateException("Cannot take form closed region");
+        }
 
         // =========================
         // WALIDACJA TARGET
@@ -68,6 +75,8 @@ public class MountainAction implements GameActionDomain {
         if (to.isClosed()) {
             throw new IllegalStateException("Target region is closed");
         }
+
+
 
         // =========================
         // WALIDACJA POPULATION
