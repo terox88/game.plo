@@ -89,6 +89,46 @@ public class ReputationService {
         throw new IllegalStateException("Player not found in slot");
     }
 
+    public void improveReputationWithoutReturningToZero(
+            GameState game,
+            UUID playerId,
+            int amount
+    ) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
 
+        PlayerState player = game.findPlayer(playerId);
+
+        int oldLevel = player.getReputation();
+
+        /*
+         * Shadow Rave:
+         * nie można wrócić na YinYang (0),
+         * więc minimalny legalny poziom to 1
+         */
+        int targetLevel = Math.max(1, oldLevel - amount);
+
+        /*
+         * jeśli już jesteśmy na 0 lub 1
+         * i nic realnie się nie zmienia
+         */
+        if (oldLevel == targetLevel) {
+            return;
+        }
+
+        ReputationTrack track = game.getReputationTrack();
+
+        // usuń ze starego slotu
+        track.getSlot(oldLevel).remove(playerId);
+
+        /*
+         * poprawa reputacji zawsze trafia
+         * na dół stosu
+         */
+        track.getSlot(targetLevel).addAtBottom(playerId);
+
+        player.setReputation(targetLevel);
+    }
 
 }
