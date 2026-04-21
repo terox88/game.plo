@@ -57,7 +57,7 @@ public class InfluenceAction implements GameActionDomain {
             if (!region.isActive()) {
                 throw new IllegalStateException("Cannot place influence in inactive region");
             }
-            if(!region.isClosed()) {
+            if(region.isClosed()) {
                 throw new IllegalStateException("Cannot place influence in closed region");
             }
 
@@ -96,4 +96,6 @@ public class InfluenceAction implements GameActionDomain {
     public boolean isFinished(ActionContext context) {
         return true;
     }
+
+
 }
