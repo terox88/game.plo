@@ -20,7 +20,7 @@ public class RegionState {
 
     @Builder.Default
     private List<Uroczysko> uroczyska = new ArrayList<>();
-
+@Setter
     private int neutralMarkerCount;
 
     @Builder.Default
