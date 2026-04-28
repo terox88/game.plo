@@ -1,4 +1,4 @@
-package com.game.domain;
+package com.game.domain.action;
 
 import com.game.game.application.GameEngine;
 import com.game.game.domain.GameState;

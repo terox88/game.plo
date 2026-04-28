@@ -1,4 +1,4 @@
-package com.game.domain;
+package com.game.domain.action;
 import com.game.game.domain.*;
 import com.game.game.domain.action.*;
 import com.game.game.domain.service.ReputationService;
