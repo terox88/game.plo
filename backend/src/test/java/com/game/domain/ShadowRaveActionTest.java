@@ -1,6 +1,7 @@
 package com.game.domain;
 import com.game.game.domain.*;
 import com.game.game.domain.action.*;
+import com.game.game.domain.service.ReputationService;
 import com.game.game.factory.GameSetupFactory;
 import com.game.game.factory.PlayerStateFactory;
 import org.junit.jupiter.api.Test;

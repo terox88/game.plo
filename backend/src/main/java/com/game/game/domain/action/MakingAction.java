@@ -1,6 +1,7 @@
 
 package com.game.game.domain.action;
 import com.game.game.domain.*;
+import com.game.game.domain.service.ReputationService;
 
 import java.util.ArrayList;
 import java.util.List;

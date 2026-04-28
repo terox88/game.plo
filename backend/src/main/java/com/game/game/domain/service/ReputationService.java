@@ -1,4 +1,9 @@
-package com.game.game.domain;
+package com.game.game.domain.service;
+import com.game.game.domain.GameState;
+import com.game.game.domain.PlayerState;
+import com.game.game.domain.ReputationSlot;
+import com.game.game.domain.ReputationTrack;
+
 import java.util.Deque;
 import java.util.UUID;
 

@@ -69,6 +69,10 @@ public class PlayerState {
             default -> false;
         };
     }
+    public boolean hasAbility(Unit unit, AbilitiesType ability) {
+        return hasAbility(unit.getLevel(), ability);
+    }
+
 
     public void useInfluenceMarker() {
 
@@ -276,7 +280,24 @@ public class PlayerState {
         availableActionMarkers = getActionMarkerLimitForCurrentRound();
     }
 
+    public LevelAbilities getLevelAbilities(int level) {
+        return switch (level) {
+            case 1 -> level1;
+            case 2 -> level2;
+            case 3 -> level3;
+            default -> throw new IllegalArgumentException("Invalid unit level: " + level);
+        };
+    }
 
+    public int countAbility(int level, AbilitiesType ability) {
+        return (int) getLevelAbilities(level).getAbilities().stream()
+                .filter(a -> a == ability)
+                .count();
+    }
+
+    public int countAbility(Unit unit, AbilitiesType ability) {
+        return countAbility(unit.getLevel(), ability);
+    }
 
 
 }

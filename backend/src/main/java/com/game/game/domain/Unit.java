@@ -26,4 +26,17 @@ public class Unit {
         this.level = level;
         this.regionId = regionId;
     }
+
+    public void kill() {
+        this.isKilled = true;
+    }
+
+    public void markAttacked() {
+        this.hasAttacked = true;
+    }
+
+    public void resetAfterUnitActivation() {
+        this.isKilled = false;
+        this.hasAttacked = false;
+    }
 }

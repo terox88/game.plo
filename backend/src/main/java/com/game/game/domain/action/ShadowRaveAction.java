@@ -2,7 +2,7 @@ package com.game.game.domain.action;
 
 import com.game.game.domain.GameState;
 import com.game.game.domain.PlayerState;
-import com.game.game.domain.ReputationService;
+import com.game.game.domain.service.ReputationService;
 
 import java.util.List;
 import java.util.UUID;

@@ -3,7 +3,7 @@ package com.game.domain;
 import com.game.game.application.GameEngine;
 import com.game.game.domain.GameState;
 import com.game.game.domain.Hero;
-import com.game.game.domain.ReputationService;
+import com.game.game.domain.service.ReputationService;
 import com.game.game.factory.GameSetupFactory;
 import com.game.game.factory.PlayerStateFactory;
 import org.junit.jupiter.api.Test;

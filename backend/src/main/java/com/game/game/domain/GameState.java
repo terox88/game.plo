@@ -1,5 +1,6 @@
 package com.game.game.domain;
 import com.game.game.domain.action.ActionSubPhase;
+import com.game.game.domain.unitactivation.UnitActivationStep;
 import lombok.*;
 import java.util.*;
 @Getter
@@ -53,9 +54,14 @@ public class GameState {
     private int currentFieldIndex;
     private boolean viperGorgeResolved;
 
-    // =========================================================
-    // 🔥 NIE USUWAJ TEGO — to było poprawne
-    // =========================================================
+    // UNIT ACTIVATION
+
+    private UnitActivationStep unitActivationStep;
+
+    private int currentUnitActivationPlayerIndex;
+
+    private Map<UUID, List<AbilitiesType>> originalMakerSpyAbilitiesByPlayer;
+    private Set<UUID> playersSkippedCurrentUnitActivationStep;
 
     public void updateGlobalProgress(PlayerState player) {
 

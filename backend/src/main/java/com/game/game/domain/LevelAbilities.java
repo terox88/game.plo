@@ -43,6 +43,6 @@ public class LevelAbilities {
     }
 
     public int getBaseAbilitiesCount() {
-        return globalSlots - availableSlots;
+        return baseAbilitiesCount;
     }
 }

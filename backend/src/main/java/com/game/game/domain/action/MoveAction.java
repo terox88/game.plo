@@ -1,11 +1,14 @@
 package com.game.game.domain.action;
 
 import com.game.game.domain.*;
+import com.game.game.domain.service.MovementService;
 
 import java.util.List;
 import java.util.UUID;
 
 public class MoveAction implements GameActionDomain {
+
+    private final MovementService movementService = new MovementService();
 
     @Override
     public ActionResult start(ActionContext context) {
@@ -27,46 +30,15 @@ public class MoveAction implements GameActionDomain {
 
         List<SingleMove> moves = moveDecision.moves();
 
-        // =========================
-        // WALIDACJA ILOŚCI RUCHÓW
-        // =========================
-
         if (moves.isEmpty() || moves.size() > 2) {
             throw new IllegalStateException("Invalid number of moves");
         }
-
-        // =========================
-        // KOSZT WALIDACJA
-        // =========================
 
         if (player.getGold() < moves.size()) {
             throw new IllegalStateException("Not enough gold");
         }
 
-        // =========================
-        // WYKONANIE RUCHÓW (SEKWENCYJNIE!)
-        // =========================
-
         for (SingleMove move : moves) {
-
-            RegionState from = findRegion(game, move.fromRegionId());
-            RegionState to = findRegion(game, move.toRegionId());
-
-            // -------------------------
-            // WALIDACJA REGIONÓW
-            // -------------------------
-
-            if (!to.isActive()) {
-                throw new IllegalStateException("Target region not active");
-            }
-
-            if (to.isClosed()) {
-                throw new IllegalStateException("Target region is closed");
-            }
-
-            if (!from.getNeighbors().contains(to.getNumber())) {
-                throw new IllegalStateException("Regions are not neighbors");
-            }
 
             boolean isUnitMove = move.unitId() != null;
             boolean isInfluenceMove = move.influenceOwnerId() != null;
@@ -75,43 +47,28 @@ public class MoveAction implements GameActionDomain {
                 throw new IllegalStateException("Must move either unit or influence");
             }
 
-            // =========================
-            // UNIT MOVE
-            // =========================
-
             if (isUnitMove) {
-
-                Unit unit = from.getUnits().stream()
-                        .filter(u -> u.getId().equals(move.unitId()))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("Unit not found"));
-
-                if (!unit.getOwnerId().equals(playerId)) {
-                    throw new IllegalStateException("Not your unit");
-                }
-
-                // wykonanie
-                from.getUnits().remove(unit);
-                unit.setRegionId(to.getId());
-                to.getUnits().add(unit);
+                movementService.moveUnit(
+                        game,
+                        playerId,
+                        move.fromRegionId(),
+                        move.toRegionId(),
+                        move.unitId(),
+                        true
+                );
             }
-
-            // =========================
-            // INFLUENCE MOVE
-            // =========================
 
             if (isInfluenceMove) {
-
-                InfluenceMarker marker = from.getInfluenceMarkers().stream()
-                        .filter(m -> m.getPlayerId().equals(playerId))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No influence marker"));
-
-                // wykonanie
-                from.getInfluenceMarkers().remove(marker);
-                to.getInfluenceMarkers().add(marker);
+                movementService.moveInfluence(
+                        game,
+                        playerId,
+                        move.fromRegionId(),
+                        move.toRegionId(),
+                        true
+                );
             }
         }
+
         player.spendGold(moves.size());
 
         return ActionResult.finished();
@@ -120,12 +77,5 @@ public class MoveAction implements GameActionDomain {
     @Override
     public boolean isFinished(ActionContext context) {
         return true;
-    }
-
-    private RegionState findRegion(GameState game, UUID id) {
-        return game.getRegions().stream()
-                .filter(r -> r.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Region not found"));
     }
 }
