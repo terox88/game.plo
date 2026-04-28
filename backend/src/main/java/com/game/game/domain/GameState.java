@@ -60,7 +60,7 @@ public class GameState {
 
     private int currentUnitActivationPlayerIndex;
 
-    private Map<UUID, List<AbilitiesType>> originalMakerSpyAbilitiesByPlayer;
+    private Map<UUID, List<Integer>> replacedMakerSpyIndexesByPlayer = new HashMap<>();
     private Set<UUID> playersSkippedCurrentUnitActivationStep;
 
     public void updateGlobalProgress(PlayerState player) {
