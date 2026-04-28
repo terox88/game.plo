@@ -62,7 +62,7 @@ public class MovementService {
         to.getInfluenceMarkers().add(marker);
     }
 
-    private void validateTargetRegion(RegionState to) {
+    public void validateTargetRegion(RegionState to) {
         if (!to.isActive()) {
             throw new IllegalStateException("Target region not active");
         }
@@ -72,7 +72,7 @@ public class MovementService {
         }
     }
 
-    private RegionState findRegion(GameState game, UUID id) {
+    public RegionState findRegion(GameState game, UUID id) {
         return game.getRegions().stream()
                 .filter(r -> r.getId().equals(id))
                 .findFirst()
