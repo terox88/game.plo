@@ -1,6 +1,7 @@
 package com.game.game.domain;
 import com.game.game.domain.action.ActionSubPhase;
 import com.game.game.domain.unitactivation.UnitActivationStep;
+import com.game.game.domain.vuko.VukoStep;
 import lombok.*;
 import java.util.*;
 @Getter
@@ -62,6 +63,10 @@ public class GameState {
     @Builder.Default
     private Map<UUID, List<Integer>> replacedMakerSpyIndexesByPlayer = new HashMap<>();
     private Set<UUID> playersSkippedCurrentUnitActivationStep;
+
+    //VUKO
+    private UUID vukoRegionId;
+    private VukoStep vukoStep;
 
     public void updateGlobalProgress(PlayerState player) {
 
