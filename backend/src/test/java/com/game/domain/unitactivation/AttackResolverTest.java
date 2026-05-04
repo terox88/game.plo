@@ -371,7 +371,6 @@ class AttackResolverTest {
 
         PlayerState attacker = game.findPlayer(attackerId);
         attacker.addGold(2);
-        attacker.getLevel1().addAbility(AbilitiesType.ATTACK);
 
         RegionState region = game.getRegionByNumber(1);
         region.getFeatures().add(RegionFeature.IN_GAME);
