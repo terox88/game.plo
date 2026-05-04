@@ -59,7 +59,7 @@ public class GameState {
     private UnitActivationStep unitActivationStep;
 
     private int currentUnitActivationPlayerIndex;
-
+    @Builder.Default
     private Map<UUID, List<Integer>> replacedMakerSpyIndexesByPlayer = new HashMap<>();
     private Set<UUID> playersSkippedCurrentUnitActivationStep;
 
